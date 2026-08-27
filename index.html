@@ -1,24 +1,32 @@
 <!DOCTYPE html>
-<html lang="th" class="dark">
+<html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบจำลองและวิเคราะห์เรขาคณิตแฟร็กทัลชายฝั่งอ่าวไทย (Gulf of Thailand Fractal Coastline Simulation)</title>
+  <title>Coastal Erosion Complexity Analysis in the Gulf of Thailand Using Fractal Box-Counting and Statistical Modeling</title>
+  <meta name="description" content="Coastal Erosion Complexity Analysis in the Gulf of Thailand Using Fractal Box-Counting and Statistical Modeling — ระบบวิเคราะห์เรขาคณิตแฟร็กทัลชายฝั่งอ่าวไทยและการจำลองฟิสิกส์คลื่นและการกัดเซาะชายฝั่ง">
   
+  <!-- Google Fonts: Mitr (Rounded), Inter & Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Mitr:wght@200;300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            brand: {
-              50: '#ecfeff',
-              500: '#06b6d4',
-              600: '#0891b2',
-              900: '#164e63',
-            }
+            appleBlack: '#000000',
+            appleCard: '#161617',
+            appleCardHover: '#1d1d1f',
+            appleSubhead: '#86868b',
+            appleBlue: '#2997ff'
+          },
+          fontFamily: {
+            sans: ['"Mitr"', '-apple-system', 'BlinkMacSystemFont', '"Inter"', '"Prompt"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
           }
         }
       }
@@ -33,361 +41,392 @@
 
   <!-- KaTeX for Math Equations -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <script>
+    window.renderAllFormulas = function(container = document.body) {
+      if (window.renderMathInElement && container) {
+        try {
+          renderMathInElement(container, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '\\[', right: '\\]', display: true },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '$', right: '$', display: false }
+            ],
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'option'],
+            throwOnError: false
+          });
+        } catch (err) {
+          console.warn('KaTeX render error:', err);
+        }
+      }
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      window.renderAllFormulas();
+    });
+  </script>
 
-  <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/styles.css">
+  <!-- Custom Apple Dark Styles (Inspired by Ref) -->
+  <link rel="stylesheet" href="./css/styles.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+<body class="bg-[#000000] text-[#f5f5f7] font-sans antialiased selection:bg-[#2997ff] selection:text-white">
 
-  <!-- ================= TOP NAVIGATION BAR ================= -->
-  <header class="border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+  <!-- ================= APPLE STYLE HEADER NAV ================= -->
+  <nav class="fixed top-0 w-full z-50 apple-nav transition-all duration-300">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
       
-      <!-- Title & Branding -->
+      <!-- Brand Logo with Vector SVG -->
+      <a href="#" class="text-base font-semibold tracking-tight text-white flex items-center gap-2">
+        <span class="w-7 h-7 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12c.6 0 1.2-.4 1.4-1 .6-1.8 2-3 4.1-3 2.5 0 4.5 2 4.5 4.5S10 17 7.5 17c-1.3 0-2.4-.5-3.2-1.4"/>
+            <path d="M22 12c-.6 0-1.2.4-1.4 1-.6 1.8-2 3-4.1 3-2.5 0-4.5-2-4.5-4.5S14 7 16.5 7c1.3 0 2.4.5 3.2 1.4"/>
+            <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+          </svg>
+        </span>
+        <span>Fractal<span class="text-[#86868b] font-normal">Gulf</span></span>
+      </a>
+
+      <!-- Center Nav Tabs with Vector SVGs -->
+      <div class="hidden md:flex items-center space-x-6 text-xs font-normal text-[#86868b]">
+        <button class="nav-tab-btn hover:text-white transition-colors tab-active text-white flex items-center gap-1.5" data-tab="pipeline">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <span>Overview & Pipeline</span>
+        </button>
+        <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5" data-tab="wave">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+          <span>Wave & Erosion</span>
+        </button>
+        <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5" data-tab="calculation">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+          <span>Calculation Guide</span>
+        </button>
+        <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5" data-tab="regional">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+          <span>Regional Study</span>
+        </button>
+        <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5" data-tab="theory">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+          <span>Theory</span>
+        </button>
+      </div>
+
+      <!-- Right Action with Vector SVG -->
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 flex-shrink-0">
-          <i data-lucide="waves" class="w-6 h-6 text-slate-950 font-bold"></i>
-        </div>
-        <div>
-          <h1 class="text-sm sm:text-lg font-extrabold bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400 bg-clip-text text-transparent leading-tight">
-            ระบบจำลองและวิเคราะห์เรขาคณิตแฟร็กทัลชายฝั่งอ่าวไทย
-          </h1>
-          <p class="text-[11px] text-slate-400 hidden sm:block">
-            Gulf of Thailand Fractal Coastline & Coastal Erosion Interactive Simulation
-          </p>
-        </div>
-      </div>
-
-      <!-- User-friendly Mode Switch & Actions -->
-      <div class="flex items-center space-x-2 sm:space-x-3">
-        
-        <!-- Mode Switch: Easy vs Advanced -->
-        <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center text-xs">
-          <button id="mode-simple-btn" class="px-2.5 py-1 rounded-lg font-semibold bg-cyan-600 text-white transition flex items-center space-x-1 shadow">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-            <span>โหมดเข้าใจง่าย</span>
-          </button>
-          <button id="mode-advanced-btn" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition flex items-center space-x-1">
-            <i data-lucide="microscope" class="w-3.5 h-3.5"></i>
-            <span class="hidden sm:inline">โหมดวิจัยเชิงลึก</span>
-          </button>
-        </div>
-
-        <!-- Auto Tour Demo Button -->
-        <button id="auto-tour-btn" class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold rounded-xl text-white shadow transition flex items-center space-x-1.5">
-          <i data-lucide="play-circle" class="w-4 h-4"></i>
-          <span class="hidden md:inline">เล่นตัวอย่างอัตโนมัติ</span>
-          <span class="md:hidden">สาธิต</span>
-        </button>
-
-        <!-- Export CSV Button -->
-        <button id="export-csv-btn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-xl text-slate-300 border border-slate-700 transition flex items-center space-x-1">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-cyan-400"></i>
-          <span class="hidden lg:inline">ส่งออก CSV</span>
+        <button id="export-csv-btn" class="apple-btn-primary text-xs !py-1.5 !px-4">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          <span>Export CSV</span>
         </button>
       </div>
 
     </div>
 
-    <!-- Main Navigation Tabs -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-4 overflow-x-auto text-xs sm:text-sm font-medium border-t border-slate-800/60 scrollbar-none">
-      <button class="nav-tab-btn py-3 px-3 tab-active text-sky-400 border-b-2 border-sky-400 flex items-center space-x-1.5 whitespace-nowrap font-bold" data-tab="pipeline">
-        <i data-lucide="scan" class="w-4 h-4 text-cyan-400"></i>
-        <span>1. วิเคราะห์แนวชายฝั่ง (Pipeline Analysis)</span>
-      </button>
-      <button class="nav-tab-btn py-3 px-3 text-slate-400 hover:text-slate-200 flex items-center space-x-1.5 whitespace-nowrap" data-tab="wave">
-        <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
-        <span>2. จำลองคลื่น & การกัดเซาะ (Wave & Erosion)</span>
-      </button>
-      <button class="nav-tab-btn py-3 px-3 text-slate-400 hover:text-slate-200 flex items-center space-x-1.5 whitespace-nowrap" data-tab="paradox">
-        <i data-lucide="ruler" class="w-4 h-4 text-amber-400"></i>
-        <span>3. ข้อขัดแย้งความยาวชายฝั่ง (Coastline Paradox)</span>
-      </button>
-      <button class="nav-tab-btn py-3 px-3 text-slate-400 hover:text-slate-200 flex items-center space-x-1.5 whitespace-nowrap" data-tab="regional">
-        <i data-lucide="map" class="w-4 h-4 text-blue-400"></i>
-        <span>4. เปรียบเทียบ 4 โซนอ่าวไทย (Regional Study)</span>
-      </button>
-      <button class="nav-tab-btn py-3 px-3 text-slate-400 hover:text-slate-200 flex items-center space-x-1.5 whitespace-nowrap" data-tab="theory">
-        <i data-lucide="book-open" class="w-4 h-4 text-purple-400"></i>
-        <span>5. ทฤษฎี & สูตรคณิตศาสตร์ (Theory & KaTeX)</span>
-      </button>
+    <!-- Mobile Navigation Sub-bar -->
+    <div class="md:hidden flex space-x-5 overflow-x-auto px-6 py-2 border-t border-white/5 text-xs text-[#86868b] scrollbar-none">
+      <button class="nav-tab-btn whitespace-nowrap text-white font-medium" data-tab="pipeline">1. Pipeline</button>
+      <button class="nav-tab-btn whitespace-nowrap" data-tab="wave">2. Wave</button>
+      <button class="nav-tab-btn whitespace-nowrap" data-tab="calculation">3. Math Guide</button>
+      <button class="nav-tab-btn whitespace-nowrap" data-tab="regional">4. Regional</button>
+      <button class="nav-tab-btn whitespace-nowrap" data-tab="theory">5. Theory</button>
     </div>
-  </header>
+  </nav>
 
-  <!-- ================= MAIN CONTENT AREA ================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <!-- ================= HERO SECTION (APPLE STYLE) ================= -->
+  <section class="pt-24 pb-8 flex flex-col justify-center items-center text-center px-6">
+    <div class="max-w-4xl mx-auto">
+      <span class="text-xs uppercase tracking-[0.25em] font-semibold text-[#2997ff] mb-3 block">
+        Research Project & Statistical Modeling
+      </span>
+      <h1 class="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4 text-apple-gradient leading-tight">
+        Coastal Erosion Complexity Analysis in the Gulf of Thailand
+      </h1>
+      <p class="text-lg sm:text-2xl font-medium tracking-tight text-[#f5f5f7] mb-4 max-w-3xl mx-auto">
+        Using Fractal Box-Counting and Statistical Modeling
+      </p>
+      <p class="text-xs sm:text-sm text-[#86868b] max-w-2xl mx-auto font-normal leading-relaxed">
+        การวิเคราะห์ความซับซ้อนของการกัดเซาะชายฝั่งอ่าวไทยด้วยมิติเรขาคณิตแฟร็กทัล Box-Counting และการสร้างแบบจำลองทางสถิติ OLS ร่วมกับแบบจำลองฟิสิกส์คลื่น 2D
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= BIG STAT HIGHLIGHTS BAR ================= -->
+  <section class="py-8 bg-[#000000] border-y border-[#424245]/20">
+    <div class="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div>
+        <div id="stat-fractal-d" class="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-1 font-mono">1.2180</div>
+        <div class="text-xs text-[#86868b]">Fractal Dimension (มิติ D)</div>
+      </div>
+      <div>
+        <div id="stat-r2" class="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-1 font-mono">99.5%</div>
+        <div class="text-xs text-[#86868b]">Model Accuracy (R² OLS)</div>
+      </div>
+      <div>
+        <div id="stat-p-value-hero" class="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-1 font-mono">&lt; 0.0001</div>
+        <div class="text-xs text-[#86868b]">Statistical p-value (มีนัยสำคัญ)</div>
+      </div>
+      <div>
+        <div id="stat-risk-badge-hero" class="text-2xl sm:text-4xl font-bold text-[#ff453a] tracking-tight mb-1">Severe Risk</div>
+        <div class="text-xs text-[#86868b]">Coastal Erosion Status (DMCR)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="max-w-6xl w-full mx-auto px-6 py-12 space-y-12">
 
     <!-- ================= TAB 1: PIPELINE ANALYZER ================= -->
-    <section id="tab-pane-pipeline" class="tab-pane space-y-6">
+    <section id="tab-pane-pipeline" class="tab-pane space-y-8">
       
-      <!-- STEP 1: Quick Region Cards (1-Click Selection) -->
-      <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-extrabold flex items-center justify-center border border-cyan-500/40">1</span>
-            <h2 class="text-sm font-bold text-slate-200">เลือกพื้นที่ชายฝั่งที่ต้องการวิเคราะห์ (คลิก 1 ครั้งเพื่อเริ่มทันที):</h2>
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span class="text-xs uppercase tracking-widest text-[#86868b] font-semibold block mb-1">Interactive Pipeline</span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Select Coastline Region.
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-3 text-xs">
+          <!-- Satellite Style Selector -->
+          <div class="apple-card !rounded-full px-3 py-1.5 flex items-center space-x-2">
+            <svg class="w-3.5 h-3.5 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a7.5 7.5 0 0 0 10 10"/><path d="M4 14a3.5 3.5 0 0 0 4 4"/><circle cx="4" cy="20" r="1.5"/><path d="M17 3a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4"/></svg>
+            <span class="text-[#86868b]">Layer:</span>
+            <select id="map-style-select" class="bg-transparent text-white font-medium focus:outline-none cursor-pointer">
+              <option value="satellite" class="bg-[#161617]">Sentinel-2 Satellite</option>
+              <option value="terrain" class="bg-[#161617]">Topographic Terrain</option>
+            </select>
           </div>
-          
-          <label class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer flex items-center space-x-1">
-            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-            <span>หรืออัปโหลดภาพดาวเทียมของท่านเอง</span>
+
+          <!-- Custom Image Upload -->
+          <label class="apple-btn-secondary !text-xs !py-1.5 !px-3.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span>Upload Image</span>
             <input type="file" id="image-upload" accept="image/*" class="hidden">
           </label>
         </div>
-
-        <!-- Gulf of Thailand Selector Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-          
-          <!-- Card 0: Whole Gulf of Thailand (Primary Highlight) -->
-          <div class="preset-card active glass-panel p-3.5 rounded-xl border border-cyan-500 bg-cyan-950/40 hover:border-cyan-400 md:col-span-1 shadow-lg" data-preset="whole_gulf">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-black text-cyan-300 flex items-center space-x-1">
-                <span>🇹🇭 ทั้งอ่าวไทย (Full Map)</span>
-              </span>
-              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">ภาพรวมใหญ่</span>
-            </div>
-            <p class="text-[11px] text-slate-200 line-clamp-2">ชายฝั่งรอบอ่าวไทยทั้งหมด ตราด-กทม.-สงขลา-นราธิวาส</p>
-            <div class="mt-2 pt-2 border-t border-cyan-800/60 flex items-center justify-between text-[11px] font-mono">
-              <span class="text-slate-400">มิติแฟร็กทัล:</span>
-              <span class="text-cyan-300 font-extrabold">D ≈ 1.218</span>
-            </div>
-          </div>
-
-          <!-- Card 1: Upper Gulf -->
-          <div class="preset-card glass-panel p-3.5 rounded-xl border border-slate-800 hover:border-cyan-500/50" data-preset="upper_gulf">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-sky-400 flex items-center space-x-1">
-                <span>📍 อ่าวไทยตอนบน</span>
-              </span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold badge-risk-high">วิกฤตสูง</span>
-            </div>
-            <p class="text-[11px] text-slate-300 line-clamp-2">รูปตัว ก ปากแม่น้ำเจ้าพระยา บางปะกง ดินเลนกัดเซาะรุนแรง</p>
-            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-              <span class="text-slate-400">มิติแฟร็กทัล:</span>
-              <span class="text-cyan-400 font-bold">D ≈ 1.194</span>
-            </div>
-          </div>
-
-          <!-- Card 2: Eastern Gulf -->
-          <div class="preset-card glass-panel p-3.5 rounded-xl border border-slate-800 hover:border-cyan-500/50" data-preset="eastern_gulf">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-sky-400 flex items-center space-x-1">
-                <span>🏝️ ฝั่งตะวันออก</span>
-              </span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold badge-risk-med">ปานกลาง-สูง</span>
-            </div>
-            <p class="text-[11px] text-slate-300 line-clamp-2">ชลบุรี-ระยอง-ตราด มีเกาะช้าง เกาะเสม็ด อ่าวเว้าแหว่งสูง</p>
-            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-              <span class="text-slate-400">มิติแฟร็กทัล:</span>
-              <span class="text-cyan-400 font-bold">D ≈ 1.286</span>
-            </div>
-          </div>
-
-          <!-- Card 3: Western Gulf -->
-          <div class="preset-card glass-panel p-3.5 rounded-xl border border-slate-800 hover:border-cyan-500/50" data-preset="western_gulf">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-sky-400 flex items-center space-x-1">
-                <span>🏖️ ฝั่งตะวันตก</span>
-              </span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold badge-risk-med">ปานกลาง</span>
-            </div>
-            <p class="text-[11px] text-slate-300 line-clamp-2">เพชรบุรี-ประจวบฯ ชายหาดยาวค่อนข้างตรง หัวหิน ชะอำ</p>
-            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-              <span class="text-slate-400">มิติแฟร็กทัล:</span>
-              <span class="text-cyan-400 font-bold">D ≈ 1.112</span>
-            </div>
-          </div>
-
-          <!-- Card 4: Southern Gulf -->
-          <div class="preset-card glass-panel p-3.5 rounded-xl border border-slate-800 hover:border-cyan-500/50" data-preset="southern_gulf">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-sky-400 flex items-center space-x-1">
-                <span>🌀 ฝั่งใต้</span>
-              </span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold badge-risk-high">วิกฤตสูง</span>
-            </div>
-            <p class="text-[11px] text-slate-300 line-clamp-2">แหลมตะลุมพุก ทะเลสาบสงขลา สันดอนจะงอยสะสมตะกอน</p>
-            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
-              <span class="text-slate-400">มิติแฟร็กทัล:</span>
-              <span class="text-cyan-400 font-bold">D ≈ 1.238</span>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Benchmark Math Quick Pills -->
-        <div class="flex items-center space-x-2 pt-1">
-          <span class="text-[11px] text-slate-400">รูปทรงทดสอบทางคณิตศาสตร์:</span>
-          <button class="preset-pill px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-medium transition" data-preset="straight_line">
-            📏 เส้นตรง (D = 1.000)
-          </button>
-          <button class="preset-pill px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-medium transition" data-preset="koch_curve">
-            ❄️ เส้นโค้ง Koch Snowflake (D = 1.262)
-          </button>
-          <button class="preset-pill px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-medium transition" data-preset="fractal_coast_high">
-            ⛰️ ชายฝั่งเว้าแหว่งสูงมาก (D ≈ 1.42)
-          </button>
-        </div>
       </div>
 
-      <!-- Big Friendly Summary Box (สรุปผลลัพธ์เข้าใจง่ายทันที) -->
-      <div id="easy-summary-card" class="glass-panel p-5 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/30 shadow-lg">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
-          <div class="space-y-1.5 flex-1">
-            <div class="flex items-center space-x-2">
-              <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-bold">
-                สรุปผลการวิเคราะห์
-              </span>
-              <h3 id="summary-area-title" class="text-base font-extrabold text-slate-100">อ่าวไทยตอนบน (Upper Gulf)</h3>
+      <!-- Bento Grid 1: 5 Gulf Preset Cards with Vector SVGs -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+        
+        <!-- Card 0: Whole Gulf -->
+        <div class="preset-card active p-5 flex flex-col justify-between" data-preset="whole_gulf">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <span class="text-sm font-semibold text-white">ทั้งอ่าวไทย</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-medium bg-white/10 text-white">TH-ALL</span>
             </div>
-            
-            <p id="stat-interpretation-text" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              แนวชายฝั่งมีส่วนเว้าโค้งและร่องน้ำสาขา เป็นดินเลนที่อ่อนไหวต่อการกัดเซาะสูง คลื่นมรสุมจะทำให้สมดุลมวลตะกอนสูญหายอย่างรวดเร็ว
+            <p class="text-xs text-[#86868b] line-clamp-2">ภาพรวมแนวชายฝั่งรอบอ่าวไทยทั้งหมด ตราด-สงขลา-นราธิวาส</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+            <span class="text-[#86868b]">D Value</span>
+            <span class="text-white font-semibold">1.218</span>
+          </div>
+        </div>
+
+        <!-- Card 1: Upper Gulf -->
+        <div class="preset-card p-5 flex flex-col justify-between" data-preset="upper_gulf">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#ff453a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m17 5-5-3-5 3"/><path d="m17 19-5 3-5-3"/><path d="M2 12h20"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="text-sm font-semibold text-white">ตอนบน</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-medium badge-risk-high">TH-UPP</span>
+            </div>
+            <p class="text-xs text-[#86868b] line-clamp-2">รูปตัว ก ปากแม่น้ำ 5 สาย กัดเซาะรุนแรง > 5 ม./ปี</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+            <span class="text-[#86868b]">D Value</span>
+            <span class="text-white font-semibold">1.194</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Eastern Gulf -->
+        <div class="preset-card p-5 flex flex-col justify-between" data-preset="eastern_gulf">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#ff9f0a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="8" r="2"/><circle cx="14" cy="17" r="3"/><path d="m8.5 7.5 7 8"/></svg>
+                <span class="text-sm font-semibold text-white">ฝั่งตะวันออก</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-medium badge-risk-med">TH-EST</span>
+            </div>
+            <p class="text-xs text-[#86868b] line-clamp-2">ชลบุรี-ระยอง-ตราด อ่าวเว้าแหว่ง เกาะช้าง เสม็ด</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+            <span class="text-[#86868b]">D Value</span>
+            <span class="text-white font-semibold">1.286</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Western Gulf -->
+        <div class="preset-card p-5 flex flex-col justify-between" data-preset="western_gulf">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#ff9f0a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="4" y2="20"/><circle cx="12" cy="12" r="9"/></svg>
+                <span class="text-sm font-semibold text-white">ฝั่งตะวันตก</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-medium badge-risk-med">TH-WST</span>
+            </div>
+            <p class="text-xs text-[#86868b] line-clamp-2">เพชรบุรี-ประจวบฯ หาดทรายตรงยาว ชะอำ หัวหิน</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+            <span class="text-[#86868b]">D Value</span>
+            <span class="text-white font-semibold">1.112</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Southern Gulf -->
+        <div class="preset-card p-5 flex flex-col justify-between" data-preset="southern_gulf">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#ff453a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12H16c-.7 2-2 3-4 3s-3.3-1-4-3H2.5"/><path d="M5.5 5.1A9.9 9.9 0 0 1 12 3c4.5 0 8.3 3 9.5 7.1"/><path d="M18.5 18.9A9.9 9.9 0 0 1 12 21c-4.5 0-8.3-3-9.5-7.1"/></svg>
+                <span class="text-sm font-semibold text-white">ฝั่งใต้</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-medium badge-risk-high">TH-STH</span>
+            </div>
+            <p class="text-xs text-[#86868b] line-clamp-2">แหลมตะลุมพุก ทะเลสาบสงขลา สันดอนสะสมตะกอน</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+            <span class="text-[#86868b]">D Value</span>
+            <span class="text-white font-semibold">1.238</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Benchmark Pills -->
+      <div class="flex items-center space-x-2 text-xs">
+        <span class="text-[#86868b]">Benchmarks:</span>
+        <button class="preset-pill apple-btn-secondary !text-xs !py-1 !px-3" data-preset="straight_line">
+          Euclidean Line (D = 1.000)
+        </button>
+        <button class="preset-pill apple-btn-secondary !text-xs !py-1 !px-3" data-preset="koch_curve">
+          Koch Curve (D = 1.262)
+        </button>
+        <button class="preset-pill apple-btn-secondary !text-xs !py-1 !px-3" data-preset="fractal_coast_high">
+          Synthesized Shoreline (D = 1.418)
+        </button>
+      </div>
+
+      <!-- Summary Bento Feature Card -->
+      <div class="apple-card p-6 md:p-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="space-y-2 flex-1">
+            <span class="text-xs uppercase tracking-wider text-[#2997ff] font-semibold block">Geomorphological Assessment</span>
+            <h3 id="summary-area-title" class="text-xl md:text-2xl font-bold text-white tracking-tight">
+              อ่าวไทยทั้งอ่าว (Entire Gulf of Thailand)
+            </h3>
+            <p id="stat-interpretation-text" class="text-sm text-[#86868b] leading-relaxed max-w-3xl">
+              ภาพรวมแนวชายฝั่งรอบอ่าวไทยมีค่ามิติแฟร็กทัลสะท้อนความซับซ้อนตามธรรมชาติ การกระจายตัวของพลังงานคลื่นขึ้นกับสัณฐานวิทยาของแต่ละภูมิภาค
             </p>
           </div>
 
-          <!-- Key Big Badges -->
           <div class="flex items-center gap-3 flex-shrink-0">
-            <!-- D Value -->
-            <div class="bg-slate-950/80 px-4 py-2.5 rounded-xl border border-cyan-500/30 text-center min-w-[110px]">
-              <span class="text-[10px] text-slate-400 font-medium block">มิติแฟร็กทัล (D)</span>
-              <span id="stat-fractal-d" class="text-2xl font-black font-mono text-cyan-400">1.1940</span>
-              <span class="text-[9px] text-slate-500 block">(1.0=ตรง, >1.2=เว้า)</span>
-            </div>
-
-            <!-- Risk Badge -->
-            <div class="bg-slate-950/80 px-4 py-2.5 rounded-xl border border-rose-500/30 text-center min-w-[120px]">
-              <span class="text-[10px] text-slate-400 font-medium block">ระดับความเสี่ยงการกัดเซาะ</span>
-              <span id="stat-risk-badge" class="text-sm font-black text-rose-400 block mt-1">
-                วิกฤตสูง 🔴
-              </span>
-              <span class="text-[9px] text-slate-400 block">Severe Erosion</span>
-            </div>
-
-            <!-- R^2 Accuracy -->
-            <div class="bg-slate-950/80 px-4 py-2.5 rounded-xl border border-emerald-500/30 text-center min-w-[100px]">
-              <span class="text-[10px] text-slate-400 font-medium block">ความแม่นยำโมเดล</span>
-              <span id="stat-r2" class="text-xl font-bold font-mono text-emerald-400">99.4%</span>
-              <span class="text-[9px] text-emerald-400/80 block">p < 0.0001</span>
-            </div>
+            <button id="export-csv-btn-hero" class="apple-btn-secondary !text-xs !py-2 !px-4">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>Export CSV</span>
+            </button>
           </div>
-
         </div>
       </div>
 
-      <!-- Advanced-only Parameter Controls (Hidden in Simple Mode) -->
-      <div class="advanced-only glass-panel-light p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+      <!-- Parameter Controls -->
+      <div class="apple-card p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div class="flex items-center space-x-3">
-          <span class="font-bold text-slate-300 flex items-center space-x-1">
-            <i data-lucide="sliders" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span>ปรับแต่งพารามิเตอร์การประมวลผลภาพ (Image Processing Hyperparameters):</span>
-          </span>
-          <select id="edge-method" class="bg-slate-900 border border-slate-700 text-cyan-400 font-semibold rounded px-2 py-1">
-            <option value="canny">Canny Filter (Dual Threshold)</option>
-            <option value="sobel">Sobel Operator</option>
-            <option value="otsu">Otsu Threshold</option>
+          <span class="font-medium text-[#86868b]">Canny Edge Operator:</span>
+          <select id="edge-method" class="apple-input !py-1.5 !px-3 !text-xs">
+            <option value="canny" class="bg-[#161617] text-[#f5f5f7]">Canny Filter (Dual Threshold)</option>
+            <option value="sobel" class="bg-[#161617] text-[#f5f5f7]">Sobel Operator</option>
+            <option value="otsu" class="bg-[#161617] text-[#f5f5f7]">Otsu Threshold</option>
           </select>
         </div>
 
         <div class="flex items-center space-x-2">
-          <span class="text-slate-400">Canny Threshold:</span>
-          <input type="range" id="canny-high-slider" min="20" max="180" value="80" class="w-28 h-1.5 bg-slate-700 rounded cursor-pointer">
-          <span id="canny-high-val" class="font-mono text-cyan-400 font-bold w-6">80</span>
-          <button id="run-analysis-btn" class="px-3 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded font-semibold text-xs ml-2">
-            คำนวณใหม่
+          <span class="text-[#86868b]">Threshold:</span>
+          <input type="range" id="canny-high-slider" min="20" max="180" value="80" class="w-28 h-1 bg-[#333336] rounded cursor-pointer">
+          <span id="canny-high-val" class="font-mono text-white font-semibold w-6">80</span>
+          <button id="run-analysis-btn" class="apple-btn-primary !text-xs !py-1 !px-3 ml-2">
+            Recalculate
           </button>
         </div>
       </div>
 
-      <!-- STEP 2: Interactive 3-Stage Visual Pipeline -->
-      <div class="space-y-3">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div class="flex items-center space-x-2">
-            <span class="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-extrabold flex items-center justify-center border border-cyan-500/40">2</span>
-            <h2 class="text-sm font-bold text-slate-200">กระบวนการวิเคราะห์ภาพและนับกล่อง (Visual Inspection Pipeline):</h2>
-          </div>
-
-          <!-- View Mode Toggle -->
-          <div class="bg-slate-900 p-1 rounded-lg border border-slate-800 flex items-center text-xs">
-            <button id="view-all-canvases-btn" class="px-2.5 py-1 rounded bg-slate-800 text-cyan-400 font-bold">
-              ดูพร้อมกัน 3 ภาพ
+      <!-- Bento Grid 2: 3-Stage Visual Canvases -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs uppercase tracking-widest text-[#86868b] font-semibold block">Inspection Canvases</span>
+          
+          <div class="bg-[#161617] p-0.5 rounded-full border border-white/10 flex items-center text-xs">
+            <button id="view-all-canvases-btn" class="px-3 py-1 rounded-full bg-white text-black font-medium transition">
+              3 Panels
             </button>
-            <button id="view-focus-canvas-btn" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200">
-              ขยายเน้นตารางนับกล่อง
+            <button id="view-focus-canvas-btn" class="px-3 py-1 rounded-full text-[#86868b] hover:text-white transition">
+              Focus Grid
             </button>
           </div>
         </div>
 
-        <!-- 3 Canvases Grid -->
-        <div id="canvases-grid" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div id="canvases-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          <!-- Canvas 1: Original Satellite Map -->
-          <div class="glass-panel p-4 rounded-xl flex flex-col space-y-2">
+          <!-- Canvas 1: Satellite Image -->
+          <div class="apple-card p-5 flex flex-col space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                <i data-lucide="image" class="w-3.5 h-3.5 text-emerald-400"></i>
-                <span>ขั้นที่ 1: ภาพแผนที่ดาวเทียม</span>
-              </h3>
-              <span class="text-[10px] text-slate-500 font-mono">512 × 512 px</span>
+              <span class="text-sm font-semibold text-white">1. Satellite Imagery</span>
+              <span class="text-xs text-[#86868b] font-mono">512 × 512</span>
             </div>
-            <div class="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+            <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center">
               <canvas id="original-canvas" width="512" height="512" class="simulation-canvas w-full h-full object-contain"></canvas>
             </div>
-            <p class="text-[11px] text-slate-400">
-              แผ่นดิน (เขียว) ปะทะทะเลอ่าวไทย (น้ำเงินเข้ม)
-            </p>
+            <p class="text-xs text-[#86868b]">แผ่นดิน (เขียว), ตะกอนปากแม่น้ำ (ทอง), ทะเล (น้ำเงิน)</p>
           </div>
 
           <!-- Canvas 2: Extracted Edge -->
-          <div class="glass-panel p-4 rounded-xl flex flex-col space-y-2">
+          <div class="apple-card p-5 flex flex-col space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                <i data-lucide="crosshair" class="w-3.5 h-3.5 text-cyan-400"></i>
-                <span>ขั้นที่ 2: สกัดเส้นขอบชายฝั่ง</span>
-              </h3>
-              <span id="stat-edge-pixels" class="text-[10px] text-cyan-400 font-mono font-bold">0 px</span>
+              <span class="text-sm font-semibold text-white">2. Clean Edge Matrix</span>
+              <span id="stat-edge-pixels" class="text-xs text-[#2997ff] font-mono font-medium">0 px</span>
             </div>
-            <div class="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+            <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center">
               <canvas id="edge-canvas" width="512" height="512" class="simulation-canvas w-full h-full object-contain"></canvas>
             </div>
-            <p class="text-[11px] text-slate-400">
-              แปลงเป็นเส้นโครงร่างเมทริกซ์ 2 มิติ (Binary Edge)
-            </p>
+            <p class="text-xs text-[#86868b]">สกัดเฉพาะเส้นขอบรอยต่อน้ำ-บกแท้จริง ปราศจาก Noise</p>
           </div>
 
           <!-- Canvas 3: Box-Counting Grid -->
-          <div class="glass-panel p-4 rounded-xl flex flex-col space-y-2">
+          <div class="apple-card p-5 flex flex-col space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                <i data-lucide="grid" class="w-3.5 h-3.5 text-amber-400"></i>
-                <span>ขั้นที่ 3: ตารางนับกล่อง (Box Grid)</span>
-              </h3>
-              <span id="current-scale-badge" class="text-[10px] text-amber-400 font-mono font-bold">สเกล ε = 64 px</span>
+              <span class="text-sm font-semibold text-white">3. Box Grid (ε)</span>
+              <span id="current-scale-badge" class="text-xs text-white font-mono">ε = 64 px</span>
             </div>
-            <div class="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+            <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center">
               <canvas id="grid-overlay-canvas" width="512" height="512" class="simulation-canvas w-full h-full object-contain"></canvas>
             </div>
             
-            <!-- Easy Animation Controls -->
+            <!-- Controls with Vector SVGs -->
             <div class="flex items-center justify-between pt-1">
               <div class="flex items-center space-x-1.5">
-                <button id="prev-scale-btn" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700 text-slate-200" title="สเกลใหญ่ขึ้น">
-                  <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                <button id="prev-scale-btn" class="apple-btn-secondary !p-2 !rounded-full">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <button id="play-scale-btn" class="px-3 py-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-xs font-bold rounded text-white flex items-center space-x-1 shadow">
-                  <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                  <span>เล่นแอนิเมชัน</span>
+                <button id="play-scale-btn" class="apple-btn-primary !text-xs !py-1.5 !px-3.5">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <span>Play</span>
                 </button>
-                <button id="next-scale-btn" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700 text-slate-200" title="สเกลเล็กลง">
-                  <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                <button id="next-scale-btn" class="apple-btn-secondary !p-2 !rounded-full">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
               </div>
-              <button id="export-image-btn" class="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center space-x-1">
-                <i data-lucide="camera" class="w-3 h-3"></i>
-                <span>บันทึกรูป</span>
+              <button id="export-image-btn" class="text-xs text-[#86868b] hover:text-white flex items-center space-x-1 transition">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                <span>Save</span>
               </button>
             </div>
           </div>
@@ -395,69 +434,65 @@
         </div>
       </div>
 
-      <!-- STEP 3: Log-Log Chart & Multi-Scale Data Table -->
+      <!-- Bento Grid 3: Log-Log Chart & Data Table -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- OLS Scatter Plot (7 cols) -->
-        <div class="lg:col-span-7 glass-panel p-4 rounded-xl flex flex-col justify-between">
+        <!-- OLS Scatter Plot -->
+        <div class="lg:col-span-7 apple-card p-6 flex flex-col justify-between">
           <div>
-            <div class="flex items-center justify-between mb-1">
-              <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
-                <i data-lucide="trending-up" class="w-4 h-4 text-cyan-400"></i>
-                <span>กราฟการคำนวณมิติแฟร็กทัล Log-Log Regression (OLS)</span>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-base font-bold text-white tracking-tight">
+                Log-Log Regression Plot (OLS)
               </h3>
-              <span class="text-xs text-amber-400 font-mono font-bold">Slope = มิติ D</span>
+              <span class="text-xs font-mono text-[#2997ff] font-semibold">Slope = Fractal D</span>
             </div>
-            <p class="text-xs text-slate-400 mb-3">
-              ความชันของเส้นตรงนี้คือค่ามิติแฟร็กทัล ($D$) ยิ่งมีความชันสูงแสดงว่าชายฝั่งยิ่งเว้าแหว่งซับซ้อน
+            <p class="text-xs text-[#86868b] mb-4">
+              ความชันของเส้นตรง OLS คือค่ามิติแฟร็กทัล ($D$)
             </p>
           </div>
 
-          <div class="relative w-full h-72 sm:h-80">
+          <div class="relative w-full h-64 sm:h-72">
             <canvas id="log-log-chart"></canvas>
           </div>
         </div>
 
-        <!-- Scale Data & Verification Info (5 cols) -->
+        <!-- Multi-scale Table & Confidence -->
         <div class="lg:col-span-5 space-y-4">
           
-          <!-- Multi-Scale Box Count Table -->
-          <div class="glass-panel p-3.5 rounded-xl">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-xs font-bold text-slate-200">
-                ข้อมูลการนับกล่องในแต่ละขนาด (Multi-Scale Data)
+          <div class="apple-card p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-semibold uppercase tracking-wider text-[#86868b]">
+                Multi-Scale Data Table
               </h4>
-              <span class="text-[10px] text-cyan-400">คลิกแถวเพื่อดู Grid ทันที</span>
             </div>
             <div class="max-h-48 overflow-y-auto">
               <table class="w-full text-left text-xs">
-                <thead class="text-slate-400 bg-slate-900/80 sticky top-0 border-b border-slate-800">
+                <thead class="text-[#86868b] bg-[#161617] sticky top-0 border-b border-white/5 font-mono">
                   <tr>
-                    <th class="py-2 px-2.5">ขนาดกล่อง (ε)</th>
-                    <th class="py-2 px-2.5">กล่องที่ทับ N(ε)</th>
+                    <th class="py-2 px-2.5">Box ε</th>
+                    <th class="py-2 px-2.5">Count N</th>
                     <th class="py-2 px-2.5">ln(1/r)</th>
                     <th class="py-2 px-2.5">ln(N)</th>
                   </tr>
                 </thead>
-                <tbody id="scales-table-body" class="divide-y divide-slate-800/40 font-mono">
+                <tbody id="scales-table-body" class="divide-y divide-white/5 font-mono text-zinc-300">
                   <!-- Injected via JS -->
                 </tbody>
               </table>
             </div>
           </div>
 
-          <!-- Statistical Validation Text -->
-          <div class="glass-panel p-3.5 rounded-xl text-xs space-y-2 border-l-4 border-l-emerald-500">
-            <div class="flex items-center space-x-1.5 font-bold text-emerald-400">
-              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-              <span>การยืนยันความน่าเชื่อถือทางสถิติ (Statistical Confidence)</span>
-            </div>
-            <p id="stat-validity-text" class="text-slate-300 text-[11px] leading-relaxed">
-              โมเดลมีความแม่นยำสูงมาก ยืนยันว่าเป็นคุณสมบัติแฟร็กทัลที่แท้จริงตามธรรมชาติ ไม่ได้เกิดจากสัญญาณรบกวน
+          <div class="apple-card p-5 space-y-2">
+            <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-[#30d158]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>Statistical Confidence</span>
+            </span>
+            <p id="stat-validity-text" class="text-xs text-[#86868b] leading-relaxed">
+              โมเดลมีความแม่นยำสูงมาก ยืนยันว่าเป็นคุณสมบัติแฟร็กทัลตามธรรมชาติ
             </p>
-            <div class="advanced-only pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between font-mono">
+            <div class="pt-2 border-t border-white/5 text-xs text-[#86868b] flex justify-between font-mono">
               <span id="stat-std-error">SE: ± 0.005</span>
-              <span id="stat-p-value">p-value < 0.0001</span>
+              <span id="stat-p-value">p &lt; 0.0001</span>
             </div>
           </div>
 
@@ -469,135 +504,136 @@
 
 
     <!-- ================= TAB 2: WAVE & EROSION SIMULATION ================= -->
-    <section id="tab-pane-wave" class="tab-pane hidden space-y-6">
+    <section id="tab-pane-wave" class="tab-pane hidden space-y-8">
       
-      <!-- Quick Scenarios Ribbon (1-Click Preset Physics) -->
-      <div class="glass-panel p-4 rounded-xl space-y-3">
+      <!-- Scenarios Bento with Vector SVGs -->
+      <div class="apple-card p-6 space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
-            <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
-            <span>เลือกสถานการณ์จำลองสำเร็จรูป (Quick Scenarios):</span>
-          </h3>
-          <span class="text-[11px] text-slate-400">กดปุ่มเพื่อดูพฤติกรรมคลื่นทันที</span>
+          <div>
+            <span class="text-xs uppercase tracking-widest text-[#86868b] font-semibold block mb-1">Simulation Preset Scenarios</span>
+            <h3 class="text-lg font-bold text-white tracking-tight">Quick Physics Scenarios</h3>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <button class="scenario-btn p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-left text-xs transition active:scale-95" data-scenario="normal">
-            <div class="font-bold text-cyan-400 flex items-center space-x-1">
-              <span>🌊 คลื่นปกติ</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="normal">
+            <div class="font-semibold text-white mb-1 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
+              <span>Normal Waves</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">คลื่นลมสงบ กัดเซาะตามธรรมชาติ</p>
+            <p class="text-[11px] text-[#86868b]">คลื่นลมสงบตามธรรมชาติ</p>
           </button>
 
-          <button class="scenario-btn p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-rose-800/60 text-left text-xs transition active:scale-95" data-scenario="monsoon">
-            <div class="font-bold text-rose-400 flex items-center space-x-1">
-              <span>🌪️ มรสุมรุนแรง</span>
+          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="monsoon">
+            <div class="font-semibold text-[#ff453a] mb-1 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-[#ff453a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
+              <span>Severe Monsoon</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">คลื่นสูง ซัดทำลายตะกอนรวดเร็ว</p>
+            <p class="text-[11px] text-[#86868b]">คลื่นมรสุมกัดเซาะรุนแรง</p>
           </button>
 
-          <button class="scenario-btn p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-800/60 text-left text-xs transition active:scale-95" data-scenario="mangrove">
-            <div class="font-bold text-emerald-400 flex items-center space-x-1">
-              <span>🌿 ปลูกป่าชายเลน</span>
+          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="mangrove">
+            <div class="font-semibold text-[#30d158] mb-1 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-[#30d158]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>Mangrove Buffer</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">รากโกงกางดูดซับแรงคลื่นได้ดี</p>
+            <p class="text-[11px] text-[#86868b]">รากโกงกางสลายพลังงานคลื่น</p>
           </button>
 
-          <button class="scenario-btn p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-blue-800/60 text-left text-xs transition active:scale-95" data-scenario="breakwater">
-            <div class="font-bold text-blue-400 flex items-center space-x-1">
-              <span>🧱 เขื่อนกันคลื่น</span>
+          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="breakwater">
+            <div class="font-semibold text-[#2997ff] mb-1 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg>
+              <span>Breakwater Barrier</span>
             </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">ลดทอนพลังงานคลื่นนอกชายฝั่ง</p>
+            <p class="text-[11px] text-[#86868b]">เขื่อนกันคลื่นนอกชายฝั่ง</p>
           </button>
         </div>
       </div>
 
-      <!-- Wave Controls & Canvas -->
+      <!-- Wave Physics Canvas & Dashboard -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- 2D Physics Canvas (8 cols) -->
-        <div class="lg:col-span-8 glass-panel p-4 rounded-xl flex flex-col space-y-3">
+        <!-- 2D Physics Viewport -->
+        <div class="lg:col-span-8 apple-card p-6 flex flex-col space-y-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
-              <button id="wave-start-btn" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white rounded-lg shadow transition flex items-center space-x-1">
-                <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                <span>เริ่มจำลอง</span>
+              <button id="wave-start-btn" class="apple-btn-primary !text-xs !py-1.5 !px-4">
+                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Start</span>
               </button>
-              <button id="wave-pause-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 rounded-lg transition">
-                พัก
+              <button id="wave-pause-btn" class="apple-btn-secondary !text-xs !py-1.5 !px-3.5">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                <span>Pause</span>
               </button>
-              <button id="wave-reset-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 rounded-lg transition">
-                รีเซ็ต
+              <button id="wave-reset-btn" class="apple-btn-secondary !text-xs !py-1.5 !px-3.5">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <span>Reset</span>
               </button>
             </div>
 
-            <!-- View Mode Switch -->
+            <!-- View Select -->
             <div class="flex items-center space-x-2 text-xs">
-              <span class="text-slate-400 hidden sm:inline">โหมดแสดงผล:</span>
-              <select id="wave-view-select" class="bg-slate-900 border border-slate-700 text-cyan-400 font-semibold text-xs rounded px-2.5 py-1">
-                <option value="wave">ผิวน้ำ & คลื่นทะเล (Wave Crests)</option>
-                <option value="energy">Heatmap พลังงานคลื่น (Wave Energy)</option>
+              <span class="text-[#86868b]">Render View:</span>
+              <select id="wave-view-select" class="apple-input !py-1 !px-3 !text-xs">
+                <option value="wave" class="bg-[#161617] text-[#f5f5f7]">Wave Crests (ผิวน้ำ)</option>
+                <option value="energy" class="bg-[#161617] text-[#f5f5f7]">Energy Heatmap (พลังงาน)</option>
               </select>
             </div>
           </div>
 
-          <div class="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+          <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center">
             <canvas id="wave-canvas" width="512" height="512" class="simulation-canvas w-full h-full object-contain"></canvas>
           </div>
 
-          <div class="flex items-center justify-between text-xs text-slate-400">
-            <span>อนุภาคสีเหลือง = มวลตะกอนชายหาด (Sediment Particles)</span>
-            <span class="text-cyan-400 font-medium">คลื่นพัดจากทะเลด้านล่างเข้าสู่ชายฝั่ง</span>
+          <div class="flex items-center justify-between text-xs text-[#86868b]">
+            <span>แผ่นดิน (เขียว) และชายหาด (ทอง) คงอยู่ตลอดเวลา</span>
+            <span class="text-white">Wave propagates from south to north</span>
           </div>
         </div>
 
-        <!-- Live Dashboard & Ocean Physics Explanation (4 cols) -->
+        <!-- Physics Stats Column -->
         <div class="lg:col-span-4 space-y-4">
           
-          <div class="glass-panel p-4 rounded-xl border-l-4 border-l-rose-500">
-            <span class="text-xs text-slate-400 font-medium">การสูญเสียมวลตะกอนชายฝั่ง (Sediment Loss)</span>
-            <div class="flex items-baseline space-x-2 mt-1">
-              <span id="wave-stat-loss" class="text-3xl font-black font-mono text-rose-400">0.0%</span>
+          <div class="apple-card p-5">
+            <span class="text-xs text-[#86868b]">Sediment Loss (การสูญเสียตะกอน)</span>
+            <div class="mt-1">
+              <span id="wave-stat-loss" class="text-3xl font-bold font-mono text-[#ff453a]">0.0%</span>
             </div>
-            <span id="wave-stat-sediment" class="text-xs text-slate-400 font-mono mt-1 block">มวลตะกอนคงเหลือ: 1,000 หน่วย</span>
+            <span id="wave-stat-sediment" class="text-xs text-[#86868b] font-mono mt-1 block">มวลตะกอนคงเหลือ: 1,000 หน่วย</span>
           </div>
 
-          <div class="glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500">
-            <span class="text-xs text-slate-400 font-medium">พลังงานคลื่นที่ถูกสลายตัว (Energy Dissipated)</span>
-            <div class="flex items-baseline space-x-2 mt-1">
-              <span id="wave-stat-dissipation" class="text-3xl font-black font-mono text-cyan-400">0 J/m</span>
+          <div class="apple-card p-5">
+            <span class="text-xs text-[#86868b]">Dissipated Wave Energy (พลังงานที่สลายตัว)</span>
+            <div class="mt-1">
+              <span id="wave-stat-dissipation" class="text-3xl font-bold font-mono text-white">0 J/m</span>
             </div>
-            <span class="text-xs text-slate-400 mt-1 block">ลดทอนผ่านความขรุขระแฟร็กทัล & แนวป่าชายเลน</span>
+            <span class="text-xs text-[#86868b] mt-1 block">ลดทอนผ่านความขรุขระแฟร็กทัล & แนวป้องกัน</span>
           </div>
 
-          <!-- Advanced Controls -->
-          <div class="advanced-only glass-panel p-3.5 rounded-xl space-y-2.5 text-xs">
+          <!-- Controls -->
+          <div class="apple-card p-4 space-y-3 text-xs">
             <div class="flex items-center justify-between">
-              <span class="text-slate-400">ความสูงคลื่น:</span>
+              <span class="text-[#86868b]">Wave Amplitude:</span>
               <div class="flex items-center space-x-2">
-                <input type="range" id="wave-amp-slider" min="4" max="25" value="12" class="w-24 h-1.5 bg-slate-700 rounded cursor-pointer">
-                <span id="wave-amp-val" class="font-mono text-cyan-400 font-bold w-7">12 m</span>
+                <input type="range" id="wave-amp-slider" min="4" max="25" value="12" class="w-24 h-1 bg-[#333336] rounded cursor-pointer">
+                <span id="wave-amp-val" class="font-mono text-white font-medium w-7">12 m</span>
               </div>
             </div>
 
             <div class="flex items-center justify-between">
-              <span class="text-slate-400">โครงสร้างป้องกัน:</span>
-              <select id="defense-select" class="bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded px-2 py-1">
-                <option value="none">ไม่มี (ธรรมชาติ)</option>
-                <option value="mangrove">ป่าชายเลน (Mangrove)</option>
-                <option value="breakwater">เขื่อนกันคลื่น (Breakwater)</option>
+              <span class="text-[#86868b]">Defense Mitigation:</span>
+              <select id="defense-select" class="apple-input !py-1 !px-2.5 !text-xs">
+                <option value="none" class="bg-[#161617] text-[#f5f5f7]">ไม่มี (ธรรมชาติ)</option>
+                <option value="mangrove" class="bg-[#161617] text-[#f5f5f7]">ป่าชายเลน (Mangrove)</option>
+                <option value="breakwater" class="bg-[#161617] text-[#f5f5f7]">เขื่อนกันคลื่น (Breakwater)</option>
               </select>
             </div>
           </div>
 
-          <!-- Ocean Physics Info -->
-          <div class="glass-panel p-4 rounded-xl text-xs text-slate-300 space-y-2.5">
-            <h4 class="font-bold text-slate-200 flex items-center space-x-1.5">
-              <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
-              <span>ทำไมแฟร็กทัลจึงสำคัญต่อการสลายคลื่น?</span>
-            </h4>
-            <p class="text-slate-400 text-[11px] leading-relaxed">
-              ชายฝั่งที่มีมิติแฟร็กทัลสูง ($D > 1.25$) จะมีพื้นที่ผิวสัมผัสคลื่นมากกว่า ช่วยกระจายพลังงานคลื่นไม่ให้ปะทะแผ่นดินพร้อมกันในจุดเดียว ต่างจากชายฝั่งตรงที่แรงคลื่นจะกระแทกแนวตรงอย่างรุนแรง
+          <div class="apple-card p-5 text-xs space-y-2">
+            <span class="font-semibold text-white block">Wave Attenuation Principle:</span>
+            <p class="text-[#86868b] leading-relaxed">
+              ชายฝั่งที่มีมิติแฟร็กทัลสูง ($D > 1.25$) จะมีพื้นที่ผิวสัมผัสคลื่นมากกว่า ช่วยกระจายพลังงานคลื่นไม่ให้ปะทะแผ่นดินพร้อมกันในจุดเดียว
             </p>
           </div>
 
@@ -608,65 +644,115 @@
     </section>
 
 
-    <!-- ================= TAB 3: COASTLINE PARADOX ================= -->
-    <section id="tab-pane-paradox" class="tab-pane hidden space-y-6">
+    <!-- ================= TAB 3: STEP-BY-STEP CALCULATION GUIDE ================= -->
+    <section id="tab-pane-calculation" class="tab-pane hidden space-y-6">
       
-      <!-- Headline Card -->
-      <div class="glass-panel p-5 rounded-2xl border border-amber-500/20 bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/20">
-        <div class="flex items-start space-x-3">
-          <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex-shrink-0">
-            <i data-lucide="help-circle" class="w-6 h-6"></i>
-          </div>
-          <div class="space-y-1">
-            <h2 class="text-base font-extrabold text-amber-300">ปรากฏการณ์ข้อขัดแย้งเรื่องความยาวชายฝั่ง (Coastline Paradox)</h2>
-            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              เคยสงสัยไหมว่าทำไม <strong>"ความยาวชายฝั่งของแต่ละหน่วยงานมักจะไม่เท่ากัน?"</strong> เพราะความยาวชายฝั่งธรรมชาติจะแปรผันตามขนาดของไม้บรรทัด ยิ่งใช้ไม้บรรทัดสั้นลงเท่าใด ก็ยิ่งวัดรายละเอียดตามซอกอ่าวได้มากขึ้น ทำให้ <strong>ความยาวรวมพุ่งสูงขึ้นอย่างไร้ขีดจำกัด!</strong>
-            </p>
-          </div>
-        </div>
+      <div class="apple-card p-8">
+        <span class="text-xs uppercase tracking-widest text-[#2997ff] font-semibold block mb-2">Mathematical Derivation</span>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+          Step-by-Step Calculation Guide.
+        </h2>
+        <p class="text-sm text-[#86868b] max-w-2xl leading-relaxed">
+          แสดงสมการและการแทนค่าตัวเลขจริงสดๆ ตั้งแต่ Image Processing $\to$ Box-Counting $\to$ OLS Regression
+        </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="space-y-6">
         
-        <!-- Interactive Ruler Walk (7 cols) -->
-        <div class="lg:col-span-7 glass-panel p-4 rounded-xl flex flex-col space-y-3">
-          
-          <!-- Big Slider -->
-          <div class="bg-slate-900/90 p-3.5 rounded-xl border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex items-center space-x-3">
-              <span class="text-xs font-bold text-amber-300 whitespace-nowrap">ปรับขนาดไม้วัด (Ruler ε):</span>
-              <input type="range" id="ruler-slider" min="4" max="150" value="40" class="w-36 sm:w-48 h-2 bg-slate-700 rounded cursor-pointer accent-amber-500">
-              <span id="ruler-slider-val" class="font-mono text-amber-400 text-xs font-black w-14">40 px</span>
-            </div>
-            <span class="text-[11px] text-slate-400 font-medium">← เลื่อนไปทางซ้ายเพื่อดูความยาวที่พุ่งสูงขึ้น</span>
+        <!-- Step 1 Card -->
+        <div class="apple-card p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white tracking-tight">
+              1. Digital Image Processing
+            </h3>
+            <span class="text-xs text-[#86868b] font-mono">512 × 512 px</span>
           </div>
 
-          <div class="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
-            <canvas id="paradox-canvas" width="512" height="512" class="simulation-canvas w-full h-full object-contain"></canvas>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-zinc-300">
+            <div class="bg-[#1d1d1f] p-4 rounded-2xl space-y-1.5 border border-white/5">
+              <div class="font-semibold text-white">1.1 Grayscale</div>
+              <div class="font-mono text-zinc-300 text-xs">\(Y = 0.299R + 0.587G + 0.114B\)</div>
+              <p class="text-[#86868b] text-[11px]">ลดทอนสัญญาณสี 3 แชนเนลเป็นความสว่าง</p>
+            </div>
+
+            <div class="bg-[#1d1d1f] p-4 rounded-2xl space-y-1.5 border border-white/5">
+              <div class="font-semibold text-white">1.2 Gaussian Blur</div>
+              <div class="font-mono text-zinc-300 text-xs">\(G(x,y) = \frac{1}{2\pi\sigma^2} e^{-\frac{x^2+y^2}{2\sigma^2}}\)</div>
+              <p class="text-[#86868b] text-[11px]">กรองสัญญาณรบกวนผิวน้ำด้วย Kernel 3×3</p>
+            </div>
+
+            <div class="bg-[#1d1d1f] p-4 rounded-2xl space-y-1.5 border border-white/5">
+              <div class="font-semibold text-white">1.3 Canny Gradient</div>
+              <div class="font-mono text-zinc-300 text-xs">\(|\nabla f| = \sqrt{G_x^2 + G_y^2}\)</div>
+              <p class="text-[#86868b] text-[11px]">สกัดเส้นขอบรอยต่อน้ำ-บกแท้จริง</p>
+            </div>
           </div>
         </div>
 
-        <!-- Richardson Curve Chart (5 cols) -->
-        <div class="lg:col-span-5 glass-panel p-4 rounded-xl flex flex-col justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-slate-200 mb-1 flex items-center space-x-2">
-              <i data-lucide="bar-chart-3" class="w-4 h-4 text-amber-400"></i>
-              <span>กราฟ Richardson Effect Curve</span>
+        <!-- Step 2 Card -->
+        <div class="apple-card p-6 space-y-3">
+          <h3 class="text-base font-bold text-white tracking-tight">
+            2. Box-Counting Algorithm
+          </h3>
+          <p class="text-xs text-[#86868b] leading-relaxed">
+            วางตารางกริดขนาด \(\epsilon = 256, 128, 64, 32, 16, 8, 4, 2\) พิกเซล แล้วนับจำนวนกล่อง \(N(\epsilon)\) ที่ครอบทับเส้นขอบ:
+          </p>
+          <div class="bg-[#1d1d1f] p-4 rounded-2xl text-center font-mono text-white text-sm border border-white/5">
+            $$D = \lim_{\epsilon \to 0} \frac{\ln N(\epsilon)}{\ln(1/\epsilon)}$$
+          </div>
+        </div>
+
+        <!-- Step 3 Card -->
+        <div class="apple-card p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white tracking-tight">
+              3. Live OLS Regression Calculation
             </h3>
-            <p class="text-xs text-slate-400 mb-3">
-              แสดงความยาวชายฝั่งรวมที่วัดได้ $L(\epsilon)$ เมื่อขนาดไม้วัดเล็กลงเรื่อยๆ
-            </p>
+            <span class="text-xs text-[#2997ff] font-mono font-medium">Live Dynamic Table</span>
           </div>
 
-          <div class="relative w-full h-64 sm:h-72">
-            <canvas id="richardson-chart"></canvas>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[#86868b] bg-[#161617] border-b border-white/5 font-mono">
+                <tr>
+                  <th class="py-2.5 px-3">i</th>
+                  <th class="py-2.5 px-3">Box ε</th>
+                  <th class="py-2.5 px-3">N(ε)</th>
+                  <th class="py-2.5 px-3">\(x_i = \ln(1/r)\)</th>
+                  <th class="py-2.5 px-3">\(y_i = \ln(N)\)</th>
+                  <th class="py-2.5 px-3">\(x_i \cdot y_i\)</th>
+                  <th class="py-2.5 px-3">\(x_i^2\)</th>
+                </tr>
+              </thead>
+              <tbody id="calc-live-table-body" class="divide-y divide-white/5 font-mono text-zinc-300">
+                <!-- Injected live via JS -->
+              </tbody>
+              <tfoot id="calc-live-table-foot" class="bg-[#1d1d1f] font-mono font-medium text-white border-t border-white/10">
+                <!-- Injected live sums -->
+              </tfoot>
+            </table>
           </div>
 
-          <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 space-y-1.5 mt-3">
-            <span class="font-bold text-amber-300">ความสำคัญในการคำนวณงบประมาณ:</span>
-            <p class="text-[11px] text-slate-400 leading-relaxed">
-              การคำนวณงบสร้างแนวป้องกันชายฝั่งโดยใช้เส้นตรงยูคลิดแบบเดิม จะทำให้ประเมินต่ำกว่าความเป็นจริงมาก การใช้มิติแฟร็กทัลจึงช่วยให้คำนวณความยาวและพื้นที่สัมผัสคลื่นจริงได้อย่างถูกต้อง
-            </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="bg-[#1d1d1f] p-4 rounded-2xl border border-white/5 space-y-2">
+              <span class="font-semibold text-white block">3.1 Slope (\(D\)):</span>
+              <div class="font-mono text-zinc-300 text-xs overflow-x-auto">
+                $$D = \frac{n \sum x_i y_i - (\sum x_i)(\sum y_i)}{n \sum x_i^2 - (\sum x_i)^2}$$
+              </div>
+              <div id="calc-live-slope-result" class="font-mono text-xs text-zinc-300 bg-black p-2.5 rounded-xl border border-white/5">
+                กำลังคำนวณ...
+              </div>
+            </div>
+
+            <div class="bg-[#1d1d1f] p-4 rounded-2xl border border-white/5 space-y-2">
+              <span class="font-semibold text-white block">3.2 Accuracy (\(R^2\)):</span>
+              <div class="font-mono text-zinc-300 text-xs overflow-x-auto">
+                $$R^2 = 1 - \frac{SS_{\text{res}}}{SS_{\text{tot}}} = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2}$$
+              </div>
+              <div id="calc-live-r2-result" class="font-mono text-xs text-zinc-300 bg-black p-2.5 rounded-xl border border-white/5">
+                กำลังคำนวณ...
+              </div>
+            </div>
           </div>
         </div>
 
@@ -678,44 +764,53 @@
     <!-- ================= TAB 4: REGIONAL COMPARISON ================= -->
     <section id="tab-pane-regional" class="tab-pane hidden space-y-6">
       
-      <div class="glass-panel p-4 rounded-xl">
-        <h2 class="text-base font-bold text-slate-100 flex items-center space-x-2 mb-1">
-          <i data-lucide="map-pin" class="w-5 h-5 text-cyan-400"></i>
-          <span>การศึกษาเปรียบเทียบเชิงพื้นที่ 4 โซนรอบอ่าวไทย (Regional Comparison Study)</span>
+      <div class="apple-card p-8">
+        <span class="text-xs uppercase tracking-widest text-[#2997ff] font-semibold block mb-2">Comparative Regional Study</span>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+          Gulf of Thailand 4 Zones.
         </h2>
-        <p class="text-xs text-slate-400">
-          เปรียบเทียบค่ามิติแฟร็กทัล ($D$), ความแม่นยำ ($R^2$), และระดับความเสี่ยงการกัดเซาะของแต่ละภูมิภาค
+        <p class="text-sm text-[#86868b] max-w-2xl leading-relaxed">
+          เปรียบเทียบค่ามิติแฟร็กทัล ($D$), ความแม่นยำ ($R^2$), อัตราการกัดเซาะจากรายงาน DMCR, และความยาวชายฝั่ง
         </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="space-y-6">
         
-        <!-- Comparison Table (7 cols) -->
-        <div class="lg:col-span-7 glass-panel p-4 rounded-xl">
-          <h3 class="text-sm font-bold text-slate-200 mb-3">ตารางเปรียบเทียบข้อมูล 4 โซนอ่าวไทย</h3>
+        <div class="apple-card p-6">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
-              <thead class="text-slate-400 bg-slate-900 border-b border-slate-800">
+              <thead class="text-[#86868b] bg-[#161617] border-b border-white/5">
                 <tr>
-                  <th class="py-3 px-4">พื้นที่</th>
-                  <th class="py-3 px-4">มิติแฟร็กทัล (D)</th>
-                  <th class="py-3 px-4">R²</th>
-                  <th class="py-3 px-4">ระดับความเสี่ยง</th>
-                  <th class="py-3 px-4">ลักษณะทางธรณีสัณฐาน</th>
+                  <th class="py-3 px-3.5">พื้นที่</th>
+                  <th class="py-3 px-3.5">มิติ D</th>
+                  <th class="py-3 px-3.5">R²</th>
+                  <th class="py-3 px-3.5">อัตรากัดเซาะ (DMCR)</th>
+                  <th class="py-3 px-3.5">ความยาว</th>
+                  <th class="py-3 px-3.5">ระดับความเสี่ยง</th>
+                  <th class="py-3 px-3.5">ลักษณะทางธรณีสัณฐาน</th>
                 </tr>
               </thead>
-              <tbody id="regional-table-body" class="divide-y divide-slate-800">
+              <tbody id="regional-table-body" class="divide-y divide-white/5 text-zinc-300">
                 <!-- Injected via JS -->
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Bar Chart (5 cols) -->
-        <div class="lg:col-span-5 glass-panel p-4 rounded-xl flex flex-col justify-between">
-          <h3 class="text-sm font-bold text-slate-200 mb-2">เปรียบเทียบค่ามิติแฟร็กทัล (D)</h3>
-          <div class="relative w-full h-72">
-            <canvas id="regional-chart"></canvas>
+        <!-- Dual Bar Charts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="apple-card p-6 flex flex-col justify-between">
+            <span class="text-sm font-bold text-white mb-4">มิติแฟร็กทัล (Fractal Dimension D)</span>
+            <div class="relative w-full h-64">
+              <canvas id="regional-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="apple-card p-6 flex flex-col justify-between">
+            <span class="text-sm font-bold text-white mb-4">อัตราการกัดเซาะเฉลี่ย (เมตร/ปี DMCR)</span>
+            <div class="relative w-full h-64">
+              <canvas id="regional-erosion-chart"></canvas>
+            </div>
           </div>
         </div>
 
@@ -727,58 +822,54 @@
     <!-- ================= TAB 5: THEORY & FORMULAS ================= -->
     <section id="tab-pane-theory" class="tab-pane hidden space-y-6">
       
-      <div class="glass-panel p-4 rounded-xl">
-        <h2 class="text-base font-bold text-slate-100 flex items-center space-x-2 mb-1">
-          <i data-lucide="book-open" class="w-5 h-5 text-cyan-400"></i>
-          <span>ทฤษฎีและสูตรคณิตศาสตร์ที่ใช้ในงานวิจัย (Mathematical Foundations)</span>
+      <div class="apple-card p-8">
+        <span class="text-xs uppercase tracking-widest text-[#2997ff] font-semibold block mb-2">Theoretical Foundations</span>
+        <h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+          Mathematical Theory.
         </h2>
-        <p class="text-xs text-slate-400">
+        <p class="text-sm text-[#86868b] max-w-2xl leading-relaxed">
           สูตรคำนวณมิตินับกล่อง, การถดถอยเชิงเส้น OLS, และการทดสอบสมมติฐานทางสถิติ
         </p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        <!-- Formula Card 1: Box Counting -->
-        <div class="glass-panel p-5 rounded-xl space-y-3 border-t-4 border-t-cyan-500">
-          <h3 class="text-sm font-bold text-cyan-300">1. มิตินับกล่อง (Box-Counting Dimension)</h3>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            นิยามมิติแฟร็กทัล $D$ จากจำนวนกล่องสี่เหลี่ยมจัตุรัสขนาด $\epsilon$ ที่ครอบทับเส้นขอบชายฝั่ง $N(\epsilon)$:
+        <div class="apple-card p-6 space-y-3">
+          <h3 class="text-sm font-bold text-white">1. มิตินับกล่อง (Box-Counting Dimension)</h3>
+          <p class="text-xs text-[#86868b] leading-relaxed">
+            นิยามมิติแฟร็กทัล $D$ จากจำนวนกล่องสี่เหลี่ยมจัตุรัสขนาด $\epsilon$ ที่ครอบทับเส้นขอบ $N(\epsilon)$:
           </p>
-          <div class="bg-slate-900/90 p-3 rounded-lg text-center font-mono text-cyan-400 text-sm overflow-x-auto">
+          <div class="bg-[#1d1d1f] p-3.5 rounded-2xl text-center font-mono text-white text-xs border border-white/5">
             $$D = \lim_{\epsilon \to 0} \frac{\ln N(\epsilon)}{\ln(1/\epsilon)}$$
           </div>
         </div>
 
-        <!-- Formula Card 2: Coastline Paradox -->
-        <div class="glass-panel p-5 rounded-xl space-y-3 border-t-4 border-t-amber-500">
-          <h3 class="text-sm font-bold text-amber-300">2. ปรากฏการณ์ Richardson (Coastline Paradox)</h3>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            ความสัมพันธ์ระหว่างความยาวชายฝั่งรวมที่วัดได้ $L(\epsilon)$ กับขนาดไม้วัด $\epsilon$:
+        <div class="apple-card p-6 space-y-3">
+          <h3 class="text-sm font-bold text-white">2. กฎความยาวของ Richardson</h3>
+          <p class="text-xs text-[#86868b] leading-relaxed">
+            ความสัมพันธ์ระหว่างความยาวชายฝั่งรวม $L(\epsilon)$ กับขนาดไม้วัด $\epsilon$:
           </p>
-          <div class="bg-slate-900/90 p-3 rounded-lg text-center font-mono text-amber-400 text-sm overflow-x-auto">
+          <div class="bg-[#1d1d1f] p-3.5 rounded-2xl text-center font-mono text-white text-xs border border-white/5">
             $$L(\epsilon) \approx F \cdot \epsilon^{1-D}$$
           </div>
         </div>
 
-        <!-- Formula Card 3: OLS Linear Regression -->
-        <div class="glass-panel p-5 rounded-xl space-y-3 border-t-4 border-t-blue-500">
-          <h3 class="text-sm font-bold text-blue-300">3. การถดถอยเชิงเส้นกำลังสองน้อยที่สุด (OLS Regression)</h3>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            การหาค่าความชัน $D$ จากสมการเส้นตรง $\ln N(\epsilon) = D \ln(1/\epsilon) + C$:
+        <div class="apple-card p-6 space-y-3">
+          <h3 class="text-sm font-bold text-white">3. การถดถอยเชิงเส้นกำลังสองน้อยที่สุด (OLS)</h3>
+          <p class="text-xs text-[#86868b] leading-relaxed">
+            การหาค่าความชัน $D$ จากสมการ $\ln N(\epsilon) = D \ln(1/\epsilon) + C$:
           </p>
-          <div class="bg-slate-900/90 p-3 rounded-lg text-center font-mono text-blue-400 text-sm overflow-x-auto">
+          <div class="bg-[#1d1d1f] p-3.5 rounded-2xl text-center font-mono text-white text-xs border border-white/5">
             $$D = \frac{n \sum x_i y_i - \sum x_i \sum y_i}{n \sum x_i^2 - (\sum x_i)^2}$$
           </div>
         </div>
 
-        <!-- Formula Card 4: Statistical Testing -->
-        <div class="glass-panel p-5 rounded-xl space-y-3 border-t-4 border-t-emerald-500">
-          <h3 class="text-sm font-bold text-emerald-300">4. การสอบทานความน่าเชื่อถือทางสถิติ (\(R^2\) และ \(p\text{-value}\))</h3>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            คำนวณสัมประสิทธิ์การตัดสินใจ $R^2$ และทดสอบสมมติฐาน $H_0: D = 0$ ด้วย $t\text{-statistic}$:
+        <div class="apple-card p-6 space-y-3">
+          <h3 class="text-sm font-bold text-white">4. การสอบทานความน่าเชื่อถือทางสถิติ</h3>
+          <p class="text-xs text-[#86868b] leading-relaxed">
+            คำนวณสัมประสิทธิ์การตัดสินใจ $R^2$ และทดสอบสมมติฐานด้วย $t\text{-statistic}$:
           </p>
-          <div class="bg-slate-900/90 p-3 rounded-lg text-center font-mono text-emerald-400 text-sm overflow-x-auto">
+          <div class="bg-[#1d1d1f] p-3.5 rounded-2xl text-center font-mono text-white text-xs border border-white/5">
             $$R^2 = 1 - \frac{SS_{\text{res}}}{SS_{\text{tot}}}, \quad t = \frac{D}{SE(D)}$$
           </div>
         </div>
@@ -789,20 +880,20 @@
 
   </main>
 
-  <!-- ================= FOOTER ================= -->
-  <footer class="border-t border-slate-800 bg-slate-900/60 py-4 text-center text-xs text-slate-400">
-    <div class="max-w-7xl mx-auto px-4">
-      โครงงานวิจัยการประยุกต์ใช้เรขาคณิตแฟร็กทัลและมิตินับกล่องในการวิเคราะห์ชายฝั่งอ่าวไทย | Simulation Engine v2.0 (Easy Mode Ready)
+  <!-- ================= APPLE STYLE FOOTER ================= -->
+  <footer class="border-t border-[#424245]/20 bg-[#000000] py-8 text-center text-xs text-[#86868b]">
+    <div class="max-w-6xl mx-auto px-6 space-y-2">
+      <p class="font-medium text-white">Coastal Erosion Complexity Analysis in the Gulf of Thailand Using Fractal Box-Counting and Statistical Modeling</p>
+      <p class="text-[11px] text-[#55555a]">Gulf of Thailand Fractal Simulation & Research Platform</p>
     </div>
   </footer>
 
   <!-- Scripts -->
-  <script src="js/presets.js"></script>
-  <script src="js/image-processor.js"></script>
-  <script src="js/box-counting.js"></script>
-  <script src="js/ols-regression.js"></script>
-  <script src="js/coastline-paradox.js"></script>
-  <script src="js/wave-simulation.js"></script>
-  <script src="js/app.js"></script>
+  <script src="./js/presets.js"></script>
+  <script src="./js/image-processor.js"></script>
+  <script src="./js/box-counting.js"></script>
+  <script src="./js/ols-regression.js"></script>
+  <script src="./js/wave-simulation.js"></script>
+  <script src="./js/app.js"></script>
 </body>
 </html>

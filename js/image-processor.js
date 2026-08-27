@@ -1,6 +1,7 @@
 /**
  * Digital Image Processing and Edge Detection Module
  * Converts satellite images and maps into a 2D binary edge matrix for fractal analysis.
+ * Filters out image border artifacts to ensure only true coastline boundaries are detected.
  */
 
 class ImageProcessor {
@@ -11,7 +12,7 @@ class ImageProcessor {
     const { data, width, height } = imageData;
     const gray = new Uint8ClampedArray(width * height);
     for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-      // Standard luminance calculation
+      // Standard luminance calculation (ITU-R BT.601)
       gray[j] = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
     }
     return gray;
@@ -49,7 +50,6 @@ class ImageProcessor {
       const mB = sumB / wB;
       const mF = (sum - sumB) / wF;
 
-      // Between class variance
       const varBetween = wB * wF * Math.pow(mB - mF, 2);
 
       if (varBetween > varMax) {
@@ -62,7 +62,7 @@ class ImageProcessor {
   }
 
   /**
-   * Gaussian Blur (3x3 kernel) to reduce noise
+   * Gaussian Blur (3x3 kernel) to reduce high frequency satellite noise
    */
   static gaussianBlur(gray, width, height) {
     const output = new Uint8ClampedArray(width * height);
@@ -88,13 +88,13 @@ class ImageProcessor {
   }
 
   /**
-   * Sobel Edge Detection Filter
+   * Sobel Edge Detection with Border Suppression
    */
   static sobelEdge(gray, width, height, threshold = 60) {
     const edges = new Uint8Array(width * height);
     const edgePixels = [];
+    const borderPadding = 6; // Suppress canvas outer frame artifacts
 
-    // Sobel kernels
     const Gx = [
       -1, 0, 1,
       -2, 0, 2,
@@ -106,8 +106,8 @@ class ImageProcessor {
        1,  2,  1
     ];
 
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
+    for (let y = borderPadding; y < height - borderPadding; y++) {
+      for (let x = borderPadding; x < width - borderPadding; x++) {
         let sumX = 0;
         let sumY = 0;
         let k = 0;
@@ -135,14 +135,15 @@ class ImageProcessor {
   }
 
   /**
-   * Canny-style edge detector (Blur -> Sobel -> Non-Maximum Suppression -> Hysteresis)
+   * Canny Edge Detection with Non-Maximum Suppression, Hysteresis, and Frame Border Suppression
    */
   static cannyEdge(gray, width, height, lowThreshold = 30, highThreshold = 80) {
     const blurred = this.gaussianBlur(gray, width, height);
     const magnitude = new Float32Array(width * height);
     const direction = new Float32Array(width * height);
+    const borderPadding = 6; // Suppress false edge artifacts along the image perimeter
 
-    // Sobel Gradient
+    // Sobel Gradient Calculation
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
         const p00 = blurred[(y - 1) * width + (x - 1)];
@@ -165,8 +166,8 @@ class ImageProcessor {
 
     // Non-maximum suppression
     const suppressed = new Float32Array(width * height);
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
+    for (let y = 2; y < height - 2; y++) {
+      for (let x = 2; x < width - 2; x++) {
         const idx = y * width + x;
         const mag = magnitude[idx];
         if (mag === 0) continue;
@@ -177,23 +178,16 @@ class ImageProcessor {
         let q = 0;
         let r = 0;
 
-        // 0 degrees (East - West)
         if ((angle >= 0 && angle < 22.5) || (angle >= 157.5 && angle <= 180)) {
           q = magnitude[y * width + (x + 1)];
           r = magnitude[y * width + (x - 1)];
-        }
-        // 45 degrees (North-East - South-West)
-        else if (angle >= 22.5 && angle < 67.5) {
+        } else if (angle >= 22.5 && angle < 67.5) {
           q = magnitude[(y + 1) * width + (x - 1)];
           r = magnitude[(y - 1) * width + (x + 1)];
-        }
-        // 90 degrees (North - South)
-        else if (angle >= 67.5 && angle < 112.5) {
+        } else if (angle >= 67.5 && angle < 112.5) {
           q = magnitude[(y + 1) * width + x];
           r = magnitude[(y - 1) * width + x];
-        }
-        // 135 degrees (North-West - South-East)
-        else if (angle >= 112.5 && angle < 157.5) {
+        } else if (angle >= 112.5 && angle < 157.5) {
           q = magnitude[(y - 1) * width + (x - 1)];
           r = magnitude[(y + 1) * width + (x + 1)];
         }
@@ -206,12 +200,12 @@ class ImageProcessor {
       }
     }
 
-    // Double thresholding and edge tracking by hysteresis
+    // Double thresholding and hysteresis with perimeter padding
     const edges = new Uint8Array(width * height);
     const edgePixels = [];
 
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
+    for (let y = borderPadding; y < height - borderPadding; y++) {
+      for (let x = borderPadding; x < width - borderPadding; x++) {
         const idx = y * width + x;
         const val = suppressed[idx];
 
@@ -219,7 +213,6 @@ class ImageProcessor {
           edges[idx] = 1;
           edgePixels.push({ x, y });
         } else if (val >= lowThreshold) {
-          // Check 8-connected neighbors
           let hasStrongNeighbor = false;
           for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
@@ -256,13 +249,20 @@ class ImageProcessor {
       return this.sobelEdge(gray, width, height, threshold);
     } else if (method === 'otsu') {
       const otsuThresh = this.computeOtsuThreshold(gray, width, height);
-      return this.sobelEdge(gray, width, height, otsuThresh * 0.4);
+      return this.sobelEdge(gray, width, height, otsuThresh * 0.45);
     } else {
-      // Default Canny
       const low = options.lowThreshold || 30;
       const high = options.highThreshold || 80;
       return this.cannyEdge(gray, width, height, low, high);
     }
+  }
+
+  /**
+   * Alias for processCanvas for API consistency
+   */
+  static binarize(sourceCanvas, options = {}) {
+    const method = options.method || 'canny';
+    return this.processCanvas(sourceCanvas, method, options);
   }
 
   /**
@@ -276,8 +276,8 @@ class ImageProcessor {
 
     const imgData = ctx.createImageData(width, height);
     const data = imgData.data;
-    const edgeColor = options.edgeColor || [34, 197, 94]; // emerald-500
-    const bgColor = options.bgColor || [6, 19, 37];       // dark navy
+    const edgeColor = options.edgeColor || [34, 197, 94]; // vibrant emerald green
+    const bgColor = options.bgColor || [6, 19, 37];       // deep navy ocean
 
     for (let i = 0; i < matrix.length; i++) {
       const pIdx = i * 4;

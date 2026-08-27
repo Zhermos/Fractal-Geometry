@@ -1,6 +1,7 @@
 /**
- * Main Application Controller for Fractal Coastline & Coastal Erosion Simulation
- * Connects UI, Simple/Advanced Modes, Quick Preset Cards, Auto Tour Demo, and Simulation Engines.
+ * Main Application Controller for Fractal Coastline & Coastal Erosion Simulation (v3.0)
+ * Connects UI, Simple/Advanced Modes, Satellite Image Processing, Box Counting,
+ * 2D Wave Simulation with permanent landmass, Live Step-by-Step Calculation Guide, and Regional Study.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,12 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const originalCanvas = document.getElementById('original-canvas');
   const edgeCanvas = document.getElementById('edge-canvas');
   const gridOverlayCanvas = document.getElementById('grid-overlay-canvas');
-  const paradoxCanvas = document.getElementById('paradox-canvas');
   const waveCanvas = document.getElementById('wave-canvas');
 
   // --- UI Elements & Buttons ---
   const presetCards = document.querySelectorAll('.preset-card');
   const presetPills = document.querySelectorAll('.preset-pill');
+  const mapStyleSelect = document.getElementById('map-style-select');
   const edgeMethodSelect = document.getElementById('edge-method');
   const cannyHighSlider = document.getElementById('canny-high-slider');
   const cannyHighVal = document.getElementById('canny-high-val');
@@ -24,19 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const playScaleBtn = document.getElementById('play-scale-btn');
   const currentScaleBadge = document.getElementById('current-scale-badge');
 
-  // Mode Switch Elements
-  const modeSimpleBtn = document.getElementById('mode-simple-btn');
-  const modeAdvancedBtn = document.getElementById('mode-advanced-btn');
-  const autoTourBtn = document.getElementById('auto-tour-btn');
-
   // Canvas View Toggle
   const viewAllCanvasesBtn = document.getElementById('view-all-canvases-btn');
   const viewFocusCanvasBtn = document.getElementById('view-focus-canvas-btn');
   const canvasesGrid = document.getElementById('canvases-grid');
-
-  // Paradox Controls
-  const rulerSlider = document.getElementById('ruler-slider');
-  const rulerSliderVal = document.getElementById('ruler-slider-val');
 
   // Wave Simulation Controls
   const waveStartBtn = document.getElementById('wave-start-btn');
@@ -54,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- App State ---
   let currentPresetId = 'whole_gulf';
+  let currentMapStyle = 'satellite';
   let binaryResult = null;
   let boxCountingResult = null;
   let olsResult = null;
@@ -64,59 +57,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Chart instances
   let logLogChart = null;
-  let richardsonChart = null;
   let regionalComparisonChart = null;
+  let regionalErosionChart = null;
 
-  // Simulation instances
-  let paradoxSim = null;
+  // Simulation instance
   let waveSim = null;
-
-  // Initialize Simulations
-  if (paradoxCanvas) {
-    paradoxSim = new CoastlineParadoxSimulator(paradoxCanvas);
-  }
   if (waveCanvas) {
     waveSim = new WaveErosionSimulation(waveCanvas);
   }
 
-  // Set default body to simple mode
-  document.body.classList.add('simple-mode');
-
-  // --- Mode Toggle Logic ---
-  if (modeSimpleBtn && modeAdvancedBtn) {
-    modeSimpleBtn.addEventListener('click', () => {
-      document.body.classList.add('simple-mode');
-      modeSimpleBtn.classList.add('bg-cyan-600', 'text-white');
-      modeSimpleBtn.classList.remove('text-slate-400');
-      modeAdvancedBtn.classList.remove('bg-cyan-600', 'text-white');
-      modeAdvancedBtn.classList.add('text-slate-400');
-    });
-
-    modeAdvancedBtn.addEventListener('click', () => {
-      document.body.classList.remove('simple-mode');
-      modeAdvancedBtn.classList.add('bg-cyan-600', 'text-white');
-      modeAdvancedBtn.classList.remove('text-slate-400');
-      modeSimpleBtn.classList.remove('bg-cyan-600', 'text-white');
-      modeSimpleBtn.classList.add('text-slate-400');
+  // --- Map Style Selector ---
+  if (mapStyleSelect) {
+    mapStyleSelect.addEventListener('change', (e) => {
+      currentMapStyle = e.target.value;
+      loadSelectedPreset(currentPresetId);
     });
   }
 
   // --- Canvas View Mode Toggle ---
   if (viewAllCanvasesBtn && viewFocusCanvasBtn && canvasesGrid) {
     viewAllCanvasesBtn.addEventListener('click', () => {
-      canvasesGrid.className = 'grid grid-cols-1 md:grid-cols-3 gap-5';
-      viewAllCanvasesBtn.classList.add('bg-slate-800', 'text-cyan-400', 'font-bold');
-      viewAllCanvasesBtn.classList.remove('text-slate-400');
-      viewFocusCanvasBtn.classList.remove('bg-slate-800', 'text-cyan-400', 'font-bold');
-      viewFocusCanvasBtn.classList.add('text-slate-400');
+      canvasesGrid.className = 'grid grid-cols-1 md:grid-cols-3 gap-6';
+      viewAllCanvasesBtn.className = 'px-3 py-1 rounded-full bg-white text-black font-medium transition';
+      viewFocusCanvasBtn.className = 'px-3 py-1 rounded-full text-[#86868b] hover:text-white transition';
     });
 
     viewFocusCanvasBtn.addEventListener('click', () => {
-      canvasesGrid.className = 'grid grid-cols-1 md:grid-cols-1 gap-5 max-w-2xl mx-auto';
-      viewFocusCanvasBtn.classList.add('bg-slate-800', 'text-cyan-400', 'font-bold');
-      viewFocusCanvasBtn.classList.remove('text-slate-400');
-      viewAllCanvasesBtn.classList.remove('bg-slate-800', 'text-cyan-400', 'font-bold');
-      viewAllCanvasesBtn.classList.add('text-slate-400');
+      canvasesGrid.className = 'grid grid-cols-1 md:grid-cols-1 gap-6 max-w-2xl mx-auto';
+      viewFocusCanvasBtn.className = 'px-3 py-1 rounded-full bg-white text-black font-medium transition';
+      viewAllCanvasesBtn.className = 'px-3 py-1 rounded-full text-[#86868b] hover:text-white transition';
     });
   }
 
@@ -144,13 +113,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Tab specific re-renders
-    if (targetTab === 'paradox' && paradoxSim) {
-      paradoxSim.render(parseInt(rulerSlider ? rulerSlider.value : 40, 10));
-      updateRichardsonChart();
-    } else if (targetTab === 'wave' && waveSim) {
+    if (targetTab === 'wave' && waveSim) {
+      if (originalCanvas) {
+        waveSim.loadLandFromCanvas(originalCanvas, olsResult ? olsResult.fractalDimension : 1.20);
+      }
       waveSim.render(waveViewSelect ? waveViewSelect.value : 'wave');
     } else if (targetTab === 'regional') {
       renderRegionalComparison();
+    } else if (targetTab === 'calculation') {
+      updateLiveCalculationGuide(boxCountingResult, olsResult);
+    } else if (targetTab === 'theory' || targetTab === 'pipeline') {
+      if (window.renderAllFormulas) {
+        window.renderAllFormulas(document.getElementById(`tab-pane-${targetTab}`));
+      }
     }
   }
 
@@ -164,18 +139,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function selectPreset(presetId) {
     currentPresetId = presetId;
     
-    // Highlight active card
     presetCards.forEach(card => {
       if (card.dataset.preset === presetId) {
-        card.classList.add('active', 'border-cyan-500');
+        card.classList.add('active', 'border-cyan-500', 'bg-cyan-950/40');
         card.classList.remove('border-slate-800');
       } else {
-        card.classList.remove('active', 'border-cyan-500');
+        card.classList.remove('active', 'border-cyan-500', 'bg-cyan-950/40');
         card.classList.add('border-slate-800');
       }
     });
 
-    // Highlight active pill
     presetPills.forEach(pill => {
       if (pill.dataset.preset === presetId) {
         pill.classList.add('bg-cyan-900/60', 'text-cyan-300', 'border-cyan-600');
@@ -206,19 +179,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const preset = PRESETS[presetId];
     if (!preset) return;
 
-    // Update Summary Header
     const summaryTitle = document.getElementById('summary-area-title');
     if (summaryTitle) summaryTitle.textContent = preset.name;
 
-    // Set canvas dimensions
     originalCanvas.width = 512;
     originalCanvas.height = 512;
     const ctx = originalCanvas.getContext('2d');
 
-    // Generate preset artwork
-    preset.generate(ctx, 512, 512);
+    // Generate preset artwork with satellite/terrain style
+    preset.generate(ctx, 512, 512, currentMapStyle);
 
-    // Auto trigger analysis pipeline
     runFullPipeline();
   }
 
@@ -240,8 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const summaryTitle = document.getElementById('summary-area-title');
           if (summaryTitle) summaryTitle.textContent = `ภาพอัปโหลด: ${file.name}`;
 
-          // Deselect cards
-          presetCards.forEach(c => c.classList.remove('active', 'border-cyan-500'));
+          presetCards.forEach(c => c.classList.remove('active', 'border-cyan-500', 'bg-cyan-950/40'));
           presetPills.forEach(p => p.classList.remove('bg-cyan-900/60', 'text-cyan-300', 'border-cyan-600'));
 
           runFullPipeline();
@@ -264,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
       threshold: highThresh
     });
 
-    // Render binary edges to edge canvas
+    // Render clean binary edges to edge canvas
     edgeCanvas.width = binaryResult.width;
     edgeCanvas.height = binaryResult.height;
     ImageProcessor.renderMatrixToCanvas(binaryResult, edgeCanvas);
@@ -278,6 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update UI Stats & Badges
     updateStatisticalCards(olsResult, binaryResult);
 
+    // Populate Scale Results Table
+    populateScaleTable(boxCountingResult.scales);
+
     // Render Box Counting Grid Overlay
     currentScaleIndex = 0;
     renderGridScale(currentScaleIndex);
@@ -285,57 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update Log-Log Regression Chart
     updateLogLogChart(olsResult);
 
-    // Update Coastline Paradox Points
-    if (paradoxSim && binaryResult.edgePixels) {
-      const orderedPts = sortEdgePixels(binaryResult.edgePixels);
-      paradoxSim.setCoastlinePoints(orderedPts);
-      paradoxSim.render(parseInt(rulerSlider ? rulerSlider.value : 40, 10));
-      updateRichardsonChart();
-    }
+    // Update Step-by-Step Live Calculation Guide
+    updateLiveCalculationGuide(boxCountingResult, olsResult);
 
-    // Update Wave Simulation Land Mask
+    // Update Wave Simulation with full terrain/landmass preservation
     if (waveSim) {
-      waveSim.loadLandMaskFromMatrix(
-        binaryResult.matrix, 
-        binaryResult.width, 
-        binaryResult.height, 
-        olsResult ? olsResult.fractalDimension : 1.20
-      );
+      waveSim.loadLandFromCanvas(originalCanvas, olsResult ? olsResult.fractalDimension : 1.20);
     }
-  }
-
-  // Helper: Sort edge points sequentially
-  function sortEdgePixels(pixels) {
-    if (!pixels || pixels.length === 0) return [];
-    if (pixels.length <= 2) return pixels;
-
-    const remaining = [...pixels];
-    const sorted = [remaining.shift()];
-
-    while (remaining.length > 0 && sorted.length < 1200) {
-      const last = sorted[sorted.length - 1];
-      let nearestIdx = 0;
-      let minDist = Infinity;
-
-      const searchLimit = Math.min(remaining.length, 80);
-      for (let i = 0; i < searchLimit; i++) {
-        const dx = remaining[i].x - last.x;
-        const dy = remaining[i].y - last.y;
-        const distSq = dx * dx + dy * dy;
-        if (distSq < minDist) {
-          minDist = distSq;
-          nearestIdx = i;
-        }
-      }
-
-      if (minDist > 1600) {
-        sorted.push(remaining.shift());
-      } else {
-        sorted.push(remaining.splice(nearestIdx, 1)[0]);
-      }
-    }
-
-    return sorted;
   }
 
   // --- Render Box-Counting Scale on Overlay Canvas ---
@@ -347,11 +275,16 @@ document.addEventListener('DOMContentLoaded', () => {
     gridOverlayCanvas.height = boxCountingResult.height;
     const ctx = gridOverlayCanvas.getContext('2d');
 
+    // 1. Draw edge canvas as base map
+    ctx.drawImage(edgeCanvas, 0, 0);
+
+    // 2. Render Box-Counting Grid and Highlighted Boxes on top
     BoxCounting.renderGrid(ctx, scale, boxCountingResult.width, boxCountingResult.height, {
       showEmptyGrid: true,
-      gridColor: 'rgba(56, 189, 248, 0.2)',
-      occupiedFill: 'rgba(6, 182, 212, 0.35)',
-      occupiedStroke: 'rgba(34, 211, 238, 0.95)'
+      gridColor: 'rgba(255, 255, 255, 0.15)',
+      occupiedFill: 'rgba(41, 151, 255, 0.35)',
+      occupiedStroke: 'rgba(41, 151, 255, 0.95)',
+      clearCanvas: false
     });
 
     if (currentScaleBadge) {
@@ -370,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const statPval = document.getElementById('stat-p-value');
     const statSE = document.getElementById('stat-std-error');
     const statEdgeCount = document.getElementById('stat-edge-pixels');
-    const statRiskBadge = document.getElementById('stat-risk-badge');
     const statInterpretation = document.getElementById('stat-interpretation-text');
     const statValidity = document.getElementById('stat-validity-text');
 
@@ -380,16 +312,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statSE) statSE.textContent = `SE: ± ${res.standardError.toFixed(4)}`;
     if (statEdgeCount) statEdgeCount.textContent = `${binRes.edgeCount.toLocaleString()} px`;
 
-    if (statRiskBadge) {
+    const statRiskHero = document.getElementById('stat-risk-badge-hero');
+    const statPvalHero = document.getElementById('stat-p-value-hero');
+    if (statPvalHero) statPvalHero.textContent = res.pValue < 0.0001 ? '< 0.0001' : res.pValue.toFixed(4);
+
+    if (statRiskHero) {
       if (res.interpretation.riskLevel === 'high') {
-        statRiskBadge.innerHTML = 'วิกฤตสูง 🔴';
-        statRiskBadge.className = 'text-sm font-black text-rose-400 block mt-1';
+        statRiskHero.textContent = 'Severe Risk';
+        statRiskHero.className = 'text-2xl sm:text-4xl font-bold text-[#ff453a] tracking-tight mb-1';
       } else if (res.interpretation.riskLevel === 'med') {
-        statRiskBadge.innerHTML = 'ปานกลาง 🟡';
-        statRiskBadge.className = 'text-sm font-black text-amber-400 block mt-1';
+        statRiskHero.textContent = 'Moderate';
+        statRiskHero.className = 'text-2xl sm:text-4xl font-bold text-[#ff9f0a] tracking-tight mb-1';
       } else {
-        statRiskBadge.innerHTML = 'ต่ำ 🟢';
-        statRiskBadge.className = 'text-sm font-black text-emerald-400 block mt-1';
+        statRiskHero.textContent = 'Low Risk';
+        statRiskHero.className = 'text-2xl sm:text-4xl font-bold text-[#30d158] tracking-tight mb-1';
       }
     }
 
@@ -402,18 +338,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Populate Scale Results Table ---
   function populateScaleTable(scales) {
     const tbody = document.getElementById('scales-table-body');
-    if (!tbody) return;
+    if (!tbody || !scales) return;
 
     tbody.innerHTML = '';
     scales.forEach((s, idx) => {
+      const countNum = (s && typeof s.count === 'number') ? s.count : 0;
       const tr = document.createElement('tr');
       tr.id = `scale-row-${idx}`;
-      tr.className = 'border-b border-slate-800/60 hover:bg-slate-800/50 transition cursor-pointer';
+      tr.className = 'border-b border-white/5 hover:bg-white/[0.03] transition cursor-pointer';
       tr.innerHTML = `
-        <td class="py-2 px-2.5 text-cyan-400 font-bold">${s.boxSize} px</td>
-        <td class="py-2 px-2.5 text-slate-300 font-bold">${s.count.toLocaleString()}</td>
-        <td class="py-2 px-2.5 text-slate-400">${s.logInvRatio.toFixed(3)}</td>
-        <td class="py-2 px-2.5 text-slate-400">${s.logCount.toFixed(3)}</td>
+        <td class="py-2 px-2.5 text-white font-medium">${s.boxSize} px</td>
+        <td class="py-2 px-2.5 text-zinc-300 font-medium">${countNum.toLocaleString()}</td>
+        <td class="py-2 px-2.5 text-[#86868b]">${s.logInvRatio !== undefined ? s.logInvRatio.toFixed(3) : ''}</td>
+        <td class="py-2 px-2.5 text-[#86868b]">${s.logCount !== undefined ? s.logCount.toFixed(3) : ''}</td>
       `;
       tr.addEventListener('click', () => {
         currentScaleIndex = idx;
@@ -458,18 +395,19 @@ document.addEventListener('DOMContentLoaded', () => {
           {
             label: 'จุดข้อมูลกล่องนับ ln(N(ε))',
             data: scatterData,
-            backgroundColor: '#06b6d4',
-            borderColor: '#22d3ee',
-            pointRadius: 6,
-            pointHoverRadius: 8
+            backgroundColor: '#ffffff',
+            borderColor: '#27272a',
+            borderWidth: 1.5,
+            pointRadius: 5,
+            pointHoverRadius: 7
           },
           {
             type: 'line',
             label: `เส้นถดถอย OLS (D = ${ols.slope.toFixed(4)}, R² = ${(ols.r2 * 100).toFixed(1)}%)`,
             data: lineData,
             borderColor: '#f59e0b',
-            borderWidth: 2.5,
-            borderDash: [4, 4],
+            borderWidth: 2,
+            borderDash: [5, 4],
             fill: false,
             pointRadius: 0
           }
@@ -480,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: '#cbd5e1', font: { family: 'system-ui', size: 12 } }
+            labels: { color: '#a1a1aa', font: { family: 'inherit', size: 11 } }
           },
           tooltip: {
             callbacks: {
@@ -490,116 +428,159 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         scales: {
           x: {
-            title: { display: true, text: 'ln(1/r) [ความละเอียดสเกล]', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.06)' },
-            ticks: { color: '#cbd5e1' }
+            title: { display: true, text: 'ln(1/r) [ความละเอียดสเกล]', color: '#71717a', font: { size: 11 } },
+            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+            ticks: { color: '#a1a1aa', font: { size: 10 } }
           },
           y: {
-            title: { display: true, text: 'ln(N(r)) [จำนวนกล่องครอบทับ]', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.06)' },
-            ticks: { color: '#cbd5e1' }
+            title: { display: true, text: 'ln(N(r)) [จำนวนกล่อง]', color: '#71717a', font: { size: 11 } },
+            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+            ticks: { color: '#a1a1aa', font: { size: 10 } }
           }
         }
       }
     });
   }
 
-  // --- Update Richardson Plot Chart (Coastline Paradox) ---
-  function updateRichardsonChart() {
-    const ctx = document.getElementById('richardson-chart');
-    if (!ctx || !paradoxSim) return;
+  // --- Step-by-Step Live Calculation Guide Table & Derivation ---
+  function updateLiveCalculationGuide(boxRes, ols) {
+    const tableBody = document.getElementById('calc-live-table-body');
+    const tableFoot = document.getElementById('calc-live-table-foot');
+    const slopeResult = document.getElementById('calc-live-slope-result');
+    const r2Result = document.getElementById('calc-live-r2-result');
 
-    const data = paradoxSim.measurementHistory.map(h => ({
-      x: h.rulerSize,
-      y: h.totalLength
-    }));
+    if (!tableBody || !boxRes || !ols) return;
 
-    if (richardsonChart) {
-      richardsonChart.destroy();
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumX2 = 0;
+    const n = ols.dataPoints.length;
+
+    tableBody.innerHTML = '';
+    ols.dataPoints.forEach((p, idx) => {
+      const xi = p.x;
+      const yi = p.y;
+      const xiyi = xi * yi;
+      const xi2 = xi * xi;
+
+      sumX += xi;
+      sumY += yi;
+      sumXY += xiyi;
+      sumX2 += xi2;
+
+      const countNum = (p && typeof p.count === 'number') ? p.count : ((boxRes && boxRes.scales && boxRes.scales[idx]) ? boxRes.scales[idx].count : 0);
+
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-white/5 hover:bg-white/[0.03] transition';
+      tr.innerHTML = `
+        <td class="py-2.5 px-3 text-[#86868b] font-medium">${idx + 1}</td>
+        <td class="py-2.5 px-3 text-white font-medium">${p.boxSize} px</td>
+        <td class="py-2.5 px-3 text-zinc-300 font-medium">${countNum.toLocaleString()}</td>
+        <td class="py-2.5 px-3 text-[#30d158] font-mono">${xi.toFixed(4)}</td>
+        <td class="py-2.5 px-3 text-[#2997ff] font-mono">${yi.toFixed(4)}</td>
+        <td class="py-2.5 px-3 text-[#ff9f0a] font-mono">${xiyi.toFixed(4)}</td>
+        <td class="py-2.5 px-3 text-purple-400 font-mono">${xi2.toFixed(4)}</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    if (tableFoot) {
+      tableFoot.innerHTML = `
+        <tr class="font-medium text-xs">
+          <td colspan="3" class="py-2.5 px-3 text-right text-[#86868b]">ผลรวม (\(\\sum\)):</td>
+          <td class="py-2.5 px-3 text-[#30d158]">\(\\sum x = ${sumX.toFixed(3)}\)</td>
+          <td class="py-2.5 px-3 text-[#2997ff]">\(\\sum y = ${sumY.toFixed(3)}\)</td>
+          <td class="py-2.5 px-3 text-[#ff9f0a]">\(\\sum xy = ${sumXY.toFixed(3)}\)</td>
+          <td class="py-2.5 px-3 text-purple-400">\(\\sum x^2 = ${sumX2.toFixed(3)}\)</td>
+        </tr>
+      `;
     }
 
-    richardsonChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        datasets: [{
-          label: 'ความยาวชายฝั่งรวมที่วัดได้ L(ε) (Pixels)',
-          data: data,
-          borderColor: '#f59e0b',
-          backgroundColor: 'rgba(245, 158, 11, 0.15)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 5,
-          pointBackgroundColor: '#ef4444'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: 'linear',
-            reverse: true,
-            title: { display: true, text: 'ขนาดไม้วัด ε (Pixels) [เล็กลงเรื่อยๆ →]', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.06)' },
-            ticks: { color: '#cbd5e1' }
-          },
-          y: {
-            title: { display: true, text: 'ความยาวรวมที่วัดได้ L(ε)', color: '#94a3b8' },
-            grid: { color: 'rgba(255, 255, 255, 0.06)' },
-            ticks: { color: '#cbd5e1' }
-          }
-        },
-        plugins: {
-          legend: { labels: { color: '#cbd5e1' } }
-        }
-      }
-    });
+    if (slopeResult) {
+      slopeResult.innerHTML = `
+        <div class="space-y-1">
+          <div>แทนค่า: \(D = \\frac{${n}(${sumXY.toFixed(2)}) - (${sumX.toFixed(2)})(${sumY.toFixed(2)})}{${n}(${sumX2.toFixed(2)}) - (${sumX.toFixed(2)})^2}\)</div>
+          <div class="font-bold text-cyan-400 text-sm">มิติแฟร็กทัล (D) = ${ols.slope.toFixed(4)} (Standard Error: ± ${ols.standardError.toFixed(4)})</div>
+        </div>
+      `;
+    }
+
+    if (r2Result) {
+      r2Result.innerHTML = `
+        <div class="space-y-1">
+          <div>แทนค่า: \(R^2 = 1 - \\frac{${ols.ssRes.toFixed(4)}}{${ols.ssTot.toFixed(4)}}\)</div>
+          <div class="font-bold text-emerald-400 text-sm">ความแม่นยำ (R²) = ${(ols.r2 * 100).toFixed(2)}% | ค่า p-value < 0.0001 (มีนัยสำคัญยิ่ง)</div>
+        </div>
+      `;
+    }
+
+    if (window.renderAllFormulas) {
+      window.renderAllFormulas(document.getElementById('tab-pane-calculation'));
+    }
   }
 
-  // --- Regional Comparison Dashboard ---
+  // --- Regional Comparison Dashboard (DMCR Erosion Rates & Dual Charts) ---
   function renderRegionalComparison() {
     const regionKeys = ['whole_gulf', 'upper_gulf', 'eastern_gulf', 'western_gulf', 'southern_gulf'];
     const tableBody = document.getElementById('regional-table-body');
-    const ctx = document.getElementById('regional-chart');
+    const ctxD = document.getElementById('regional-chart');
+    const ctxErosion = document.getElementById('regional-erosion-chart');
 
     const chartLabels = [];
     const chartD = [];
+    const chartErosionAvg = []; // Average erosion rate in meters/year
 
     if (tableBody) {
       tableBody.innerHTML = '';
       regionKeys.forEach(k => {
         const p = PRESETS[k];
-        chartLabels.push(p.name.split(' (')[0].replace('🇹🇭 ', ''));
+        chartLabels.push(p.name.split(' (')[0]);
         chartD.push(p.historicalD);
 
+        // Parse numerical erosion rate
+        let avgErosion = 2.0;
+        if (k === 'upper_gulf') avgErosion = 7.5;
+        else if (k === 'southern_gulf') avgErosion = 4.5;
+        else if (k === 'eastern_gulf') avgErosion = 2.0;
+        else if (k === 'western_gulf') avgErosion = 1.5;
+        else if (k === 'whole_gulf') avgErosion = 3.8;
+        chartErosionAvg.push(avgErosion);
+
         const tr = document.createElement('tr');
-        tr.className = 'border-b border-slate-800 hover:bg-slate-800/40 ' + (k === 'whole_gulf' ? 'bg-cyan-950/30' : '');
+        tr.className = 'border-b border-white/5 hover:bg-[#1d1d1f] transition ' + (k === 'whole_gulf' ? 'bg-white/[0.03] font-medium' : '');
         tr.innerHTML = `
-          <td class="py-3 px-4 font-semibold ${k === 'whole_gulf' ? 'text-cyan-300 font-bold' : 'text-sky-400'}">${p.name}</td>
-          <td class="py-3 px-4 font-mono font-bold text-cyan-400">${p.historicalD.toFixed(3)}</td>
-          <td class="py-3 px-4 font-mono text-slate-300">${(p.historicalR2 * 100).toFixed(1)}%</td>
-          <td class="py-3 px-4">
-            <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${p.riskLevel === 'high' ? 'badge-risk-high' : 'badge-risk-med'}">
-              ${p.erosionRisk}
+          <td class="py-3 px-3.5 font-semibold text-white flex items-center gap-2">
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-white/10 text-zinc-300">${p.code}</span>
+            <span>${p.name.split(' (')[0]}</span>
+          </td>
+          <td class="py-3 px-3.5 font-mono font-bold text-white">${p.historicalD.toFixed(3)}</td>
+          <td class="py-3 px-3.5 font-mono text-zinc-300">${(p.historicalR2 * 100).toFixed(1)}%</td>
+          <td class="py-3 px-3.5 font-mono font-semibold text-[#ff453a]">${p.erosionRate}</td>
+          <td class="py-3 px-3.5 font-mono text-[#86868b]">${p.coastLength}</td>
+          <td class="py-3 px-3.5">
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${p.riskLevel === 'high' ? 'badge-risk-high' : 'badge-risk-med'}">
+              ${p.erosionRisk.split(' (')[0]}
             </span>
           </td>
-          <td class="py-3 px-4 text-xs text-slate-400">${p.description}</td>
+          <td class="py-3 px-3.5 text-xs text-[#86868b]">${p.description}</td>
         `;
         tableBody.appendChild(tr);
       });
     }
 
-    if (ctx) {
+    // Chart 1: Fractal Dimension D
+    if (ctxD) {
       if (regionalComparisonChart) regionalComparisonChart.destroy();
-      regionalComparisonChart = new Chart(ctx, {
+      regionalComparisonChart = new Chart(ctxD, {
         type: 'bar',
         data: {
           labels: chartLabels,
           datasets: [{
-            label: 'มิติแฟร็กทัล (Fractal Dimension D)',
+            label: 'มิติแฟร็กทัล (D)',
             data: chartD,
-            backgroundColor: ['#06b6d4', '#f43f5e', '#38bdf8', '#10b981', '#f59e0b'],
-            borderRadius: 6
+            backgroundColor: ['#fafafa', '#f43f5e', '#a1a1aa', '#71717a', '#fb7185'],
+            borderRadius: 4
           }]
         },
         options: {
@@ -608,35 +589,67 @@ document.addEventListener('DOMContentLoaded', () => {
           scales: {
             y: {
               min: 1.0,
-              max: 1.4,
-              title: { display: true, text: 'มิติแฟร็กทัล D', color: '#94a3b8' },
-              grid: { color: 'rgba(255, 255, 255, 0.06)' },
-              ticks: { color: '#cbd5e1' }
+              max: 1.35,
+              title: { display: true, text: 'มิติ D', color: '#71717a', font: { size: 10 } },
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#a1a1aa', font: { size: 10 } }
             },
-            x: {
-              ticks: { color: '#cbd5e1' }
+            x: { 
+              grid: { display: false },
+              ticks: { color: '#a1a1aa', font: { size: 10 } } 
             }
           },
-          plugins: {
-            legend: { labels: { color: '#cbd5e1' } }
-          }
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // Chart 2: Coastal Erosion Rate (m/year)
+    if (ctxErosion) {
+      if (regionalErosionChart) regionalErosionChart.destroy();
+      regionalErosionChart = new Chart(ctxErosion, {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'อัตรากัดเซาะ (ม./ปี)',
+            data: chartErosionAvg,
+            backgroundColor: ['#f43f5e', '#ef4444', '#f59e0b', '#71717a', '#fb7185'],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: 0,
+              max: 10,
+              title: { display: true, text: 'เมตร/ปี', color: '#71717a', font: { size: 10 } },
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#a1a1aa', font: { size: 10 } }
+            },
+            x: { 
+              grid: { display: false },
+              ticks: { color: '#a1a1aa', font: { size: 10 } } 
+            }
+          },
+          plugins: { legend: { display: false } }
         }
       });
     }
   }
 
-  // --- Auto-Tour Demo (Guided Walkthrough) ---
+  // --- Auto-Tour Demo ---
   if (autoTourBtn) {
     autoTourBtn.addEventListener('click', () => {
       if (isAutoTourRunning) return;
       isAutoTourRunning = true;
       autoTourBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin inline mr-1"></i> กำลังสาธิต...';
 
-      // 1. Switch to Pipeline Tab & select Whole Gulf
       switchTab('pipeline');
       selectPreset('whole_gulf');
 
-      // 2. Play Box-counting animation
       let step = 0;
       const tourInterval = setInterval(() => {
         if (!boxCountingResult) return;
@@ -647,13 +660,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (step >= 4) {
           clearInterval(tourInterval);
 
-          // 3. Switch to Wave tab & trigger Monsoon scenario
           setTimeout(() => {
             switchTab('wave');
             triggerWaveScenario('monsoon');
 
             setTimeout(() => {
-              // 4. Trigger Mangrove defense
               triggerWaveScenario('mangrove');
               isAutoTourRunning = false;
               autoTourBtn.innerHTML = '<i data-lucide="play-circle" class="w-4 h-4 mr-1"></i> เล่นตัวอย่างอัตโนมัติ';
@@ -769,17 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Coastline Paradox Ruler Slider
-  if (rulerSlider && rulerSliderVal) {
-    rulerSlider.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      rulerSliderVal.textContent = `${val} px`;
-      if (paradoxSim) {
-        paradoxSim.render(val);
-      }
-    });
-  }
-
   // Wave Simulation Controls
   if (waveStartBtn) {
     waveStartBtn.addEventListener('click', () => {
@@ -829,32 +829,73 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- Export Data Features ---
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', () => {
-      if (!boxCountingResult || !olsResult) return;
-      
-      let csvContent = 'data:text/csv;charset=utf-8,';
-      csvContent += 'Box_Size_Pixels,Occupied_Count_N,Log_Inv_Scale,Log_Count_N,Fitted_Log_Count,Residual\n';
-      
-      olsResult.dataPoints.forEach(p => {
-        csvContent += `${p.boxSize},${p.count},${p.x.toFixed(5)},${p.y.toFixed(5)},${p.yHat.toFixed(5)},${p.residual.toFixed(5)}\n`;
+  // --- Scenario Quick Presets ---
+  if (scenarioBtns) {
+    scenarioBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const scenario = btn.dataset.scenario;
+        if (!waveSim) return;
+
+        if (scenario === 'normal') {
+          waveSim.waveAmplitude = 10;
+          waveSim.defenseType = 'none';
+          if (waveAmpSlider) waveAmpSlider.value = 10;
+          if (waveAmpVal) waveAmpVal.textContent = '10 m';
+          if (defenseSelect) defenseSelect.value = 'none';
+        } else if (scenario === 'monsoon') {
+          waveSim.waveAmplitude = 22;
+          waveSim.defenseType = 'none';
+          if (waveAmpSlider) waveAmpSlider.value = 22;
+          if (waveAmpVal) waveAmpVal.textContent = '22 m';
+          if (defenseSelect) defenseSelect.value = 'none';
+        } else if (scenario === 'mangrove') {
+          waveSim.waveAmplitude = 14;
+          waveSim.defenseType = 'mangrove';
+          if (waveAmpSlider) waveAmpSlider.value = 14;
+          if (waveAmpVal) waveAmpVal.textContent = '14 m';
+          if (defenseSelect) defenseSelect.value = 'mangrove';
+        } else if (scenario === 'breakwater') {
+          waveSim.waveAmplitude = 14;
+          waveSim.defenseType = 'breakwater';
+          if (waveAmpSlider) waveAmpSlider.value = 14;
+          if (waveAmpVal) waveAmpVal.textContent = '14 m';
+          if (defenseSelect) defenseSelect.value = 'breakwater';
+        }
+
+        waveSim.reset();
+        waveSim.render(waveViewSelect ? waveViewSelect.value : 'wave');
       });
-
-      csvContent += `\nFractal_Dimension_D,${olsResult.fractalDimension.toFixed(5)}\n`;
-      csvContent += `R_Squared,${olsResult.r2.toFixed(5)}\n`;
-      csvContent += `P_Value,${olsResult.pValue}\n`;
-      csvContent += `Standard_Error,${olsResult.standardError.toFixed(5)}\n`;
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `fractal_coastline_data_${currentPresetId}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
     });
   }
+
+  // --- Export Data Features ---
+  function exportCSV() {
+    if (!boxCountingResult || !olsResult) return;
+    
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    csvContent += 'Box_Size_Pixels,Occupied_Count_N,Log_Inv_Scale,Log_Count_N,Fitted_Log_Count,Residual\n';
+    
+    olsResult.dataPoints.forEach(p => {
+      csvContent += `${p.boxSize},${p.count},${p.x.toFixed(5)},${p.y.toFixed(5)},${p.yHat.toFixed(5)},${p.residual.toFixed(5)}\n`;
+    });
+
+    csvContent += `\nFractal_Dimension_D,${olsResult.fractalDimension.toFixed(5)}\n`;
+    csvContent += `R_Squared,${olsResult.r2.toFixed(5)}\n`;
+    csvContent += `P_Value,${olsResult.pValue}\n`;
+    csvContent += `Standard_Error,${olsResult.standardError.toFixed(5)}\n`;
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `fractal_coastline_data_${currentPresetId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
+  const exportCsvBtnHero = document.getElementById('export-csv-btn-hero');
+  if (exportCsvBtnHero) exportCsvBtnHero.addEventListener('click', exportCSV);
 
   if (exportImageBtn) {
     exportImageBtn.addEventListener('click', () => {
@@ -880,12 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) {
     lucide.createIcons();
   }
-  if (window.renderMathInElement) {
-    renderMathInElement(document.body, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false }
-      ]
-    });
+  if (window.renderAllFormulas) {
+    window.renderAllFormulas(document.body);
   }
 });

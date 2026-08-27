@@ -2,6 +2,7 @@
  * 2D Wave Physics, Energy Dissipation & Coastal Erosion Simulation Module
  * Simulates shallow water wave propagation, wave refraction at headlands,
  * wave energy dissipation across fractal coastlines, and sediment transport.
+ * Guarantees that the entire landmass and terrain stay permanently visible.
  */
 
 class WaveErosionSimulation {
@@ -9,15 +10,16 @@ class WaveErosionSimulation {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     
-    // Grid resolution for wave physics (scaled down for 60fps performance)
-    this.gridW = 120;
-    this.gridH = 120;
+    // Grid resolution for wave physics
+    this.gridW = 128;
+    this.gridH = 128;
     
-    this.u = new Float32Array(this.gridW * this.gridH);      // current wave height
-    this.uPrev = new Float32Array(this.gridW * this.gridH);  // previous step
-    this.uNext = new Float32Array(this.gridW * this.gridH);  // next step
-    this.energyMap = new Float32Array(this.gridW * this.gridH); // accumulated wave energy
-    this.landMask = new Uint8Array(this.gridW * this.gridH); // 1 = land, 0 = ocean
+    this.u = new Float32Array(this.gridW * this.gridH);         // Current wave height
+    this.uPrev = new Float32Array(this.gridW * this.gridH);     // Previous wave height
+    this.uNext = new Float32Array(this.gridW * this.gridH);     // Next wave height
+    this.energyMap = new Float32Array(this.gridW * this.gridH); // Accumulated wave energy
+    this.landMask = new Uint8Array(this.gridW * this.gridH);    // 1 = Land, 0 = Ocean
+    this.terrainColors = new Uint8ClampedArray(this.gridW * this.gridH * 3); // Preserved land colors
 
     // Simulation Parameters
     this.waveSpeed = 0.45;
@@ -32,18 +34,19 @@ class WaveErosionSimulation {
     // Sediment & Erosion Stats
     this.totalSediment = 1000;
     this.initialSediment = 1000;
-    this.erosionRate = 0; // units/sec
+    this.erosionRate = 0;
     this.dissipatedEnergy = 0;
     this.defenseType = 'none'; // 'none', 'mangrove', 'breakwater'
 
-    // Interactive sediment particles along coastline
+    // Sediment particles along the beach
     this.sediments = [];
   }
 
   /**
-   * Initialize simulation grid from a binary edge/land matrix
+   * Load solid landmass from source canvas RGB data
    */
-  loadLandMaskFromMatrix(matrix, srcW, srcH, fractalDimension = 1.20) {
+  loadLandFromCanvas(sourceCanvas, fractalDimension = 1.20) {
+    if (!sourceCanvas) return;
     this.fractalD = fractalDimension;
     this.u.fill(0);
     this.uPrev.fill(0);
@@ -54,26 +57,67 @@ class WaveErosionSimulation {
     this.initialSediment = 1000;
     this.sediments = [];
 
-    // Scale binary matrix to simulation grid dimensions
+    const srcW = sourceCanvas.width;
+    const srcH = sourceCanvas.height;
+    const srcCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    const imgData = srcCtx.getImageData(0, 0, srcW, srcH).data;
+
+    let landCount = 0;
+
     for (let gy = 0; gy < this.gridH; gy++) {
       for (let gx = 0; gx < this.gridW; gx++) {
         const sx = Math.floor((gx / this.gridW) * srcW);
         const sy = Math.floor((gy / this.gridH) * srcH);
-        const srcIdx = sy * srcW + sx;
+        const srcIdx = (sy * srcW + sx) * 4;
         const gIdx = gy * this.gridW + gx;
 
-        // If land (or edge), mark as solid boundary
-        this.landMask[gIdx] = (matrix && matrix[srcIdx] === 1) || (sy < srcH * 0.45 && matrix && matrix[srcIdx] === 1) ? 1 : 0;
+        const r = imgData[srcIdx];
+        const g = imgData[srcIdx + 1];
+        const b = imgData[srcIdx + 2];
+
+        // Robust Land Detection Rule
+        let isLand = false;
+        if (b > g && b > r) {
+          isLand = false; // Definite Blue Ocean
+        } else if (g >= b * 1.35 && g > 35) {
+          isLand = true;  // Lush Green Landmass
+        } else if (r > b * 1.4 && g > b * 1.15 && (r > 60 || g > 60)) {
+          isLand = true;  // Sandy Beach / Gold Shoreline / Brown River Delta
+        } else if (g > b + 12 && g > 40) {
+          isLand = true;
+        }
+
+        if (isLand) {
+          this.landMask[gIdx] = 1;
+          this.terrainColors[gIdx * 3] = r;
+          this.terrainColors[gIdx * 3 + 1] = g;
+          this.terrainColors[gIdx * 3 + 2] = b;
+          landCount++;
+        } else {
+          this.landMask[gIdx] = 0;
+        }
       }
     }
 
-    // Spawn sediment particles near the shoreline
+    // Safety fallback: if no land was detected, sample left half of canvas as land
+    if (landCount === 0) {
+      for (let gy = 0; gy < this.gridH; gy++) {
+        for (let gx = 0; gx < Math.floor(this.gridW * 0.45); gx++) {
+          const gIdx = gy * this.gridW + gx;
+          this.landMask[gIdx] = 1;
+          this.terrainColors[gIdx * 3] = 20;
+          this.terrainColors[gIdx * 3 + 1] = 83;
+          this.terrainColors[gIdx * 3 + 2] = 45;
+        }
+      }
+    }
+
     this.spawnSedimentParticles();
     this.render();
   }
 
   /**
-   * Spawn sediment particles along the land-water interface
+   * Spawn sediment particles along the land-water shoreline
    */
   spawnSedimentParticles() {
     this.sediments = [];
@@ -83,7 +127,6 @@ class WaveErosionSimulation {
     for (let gy = 1; gy < this.gridH - 1; gy++) {
       for (let gx = 1; gx < this.gridW - 1; gx++) {
         const idx = gy * this.gridW + gx;
-        // Check if ocean pixel adjacent to land pixel
         if (this.landMask[idx] === 0) {
           const hasLandNeighbor = 
             this.landMask[(gy-1)*this.gridW + gx] === 1 ||
@@ -91,14 +134,13 @@ class WaveErosionSimulation {
             this.landMask[gy*this.gridW + (gx-1)] === 1 ||
             this.landMask[gy*this.gridW + (gx+1)] === 1;
 
-          if (hasLandNeighbor && Math.random() < 0.6) {
+          if (hasLandNeighbor && Math.random() < 0.7) {
             this.sediments.push({
               x: (gx + Math.random() * 0.8) * scaleX,
               y: (gy + Math.random() * 0.8) * scaleY,
               gridX: gx,
               gridY: gy,
-              health: 1.0,
-              velocity: { x: 0, y: 0 }
+              health: 1.0
             });
           }
         }
@@ -107,7 +149,7 @@ class WaveErosionSimulation {
   }
 
   /**
-   * Single physics simulation step (2D Wave Equation + Shallow Water Dissipation)
+   * Single physics simulation step
    */
   step() {
     this.timeStep++;
@@ -115,19 +157,17 @@ class WaveErosionSimulation {
     const gh = this.gridH;
     const c2 = this.waveSpeed * this.waveSpeed;
 
-    // 1. Oscillating wave source at bottom ocean boundary (Monsoon ocean swell)
+    // 1. Oscillating wave swell from open ocean at bottom
     const waveSourceY = gh - 2;
     for (let gx = 0; gx < gw; gx++) {
       if (this.landMask[waveSourceY * gw + gx] === 0) {
-        // Multi-frequency wave train mimicking sea conditions
         const wave = Math.sin(this.timeStep * this.waveFrequency) * this.waveAmplitude
                    + Math.sin(this.timeStep * this.waveFrequency * 0.5 + gx * 0.08) * (this.waveAmplitude * 0.35);
         this.u[waveSourceY * gw + gx] = wave;
       }
     }
 
-    // 2. Finite difference wave equation update: uNext = 2*u - uPrev + c^2 * Laplacian(u)
-    let currentEnergySum = 0;
+    // 2. Wave equation discrete Laplacian
     let dissipatedInStep = 0;
 
     for (let y = 1; y < gh - 1; y++) {
@@ -139,20 +179,15 @@ class WaveErosionSimulation {
           continue;
         }
 
-        // Coastal Defense attenuation damping
         let effectiveDamping = this.damping;
         if (this.defenseType === 'mangrove') {
-          // Mangrove root zone attenuates waves heavily
-          const hasLandNearby = this.hasLandWithin(x, y, 3);
-          if (hasLandNearby) effectiveDamping *= 0.92;
+          if (this.hasLandWithin(x, y, 3)) effectiveDamping *= 0.91;
         } else if (this.defenseType === 'breakwater') {
-          // Offshore breakwater blocks waves at mid-grid
           if (y === Math.floor(gh * 0.65) && (x % 16 < 12)) {
-            effectiveDamping *= 0.60;
+            effectiveDamping *= 0.62;
           }
         }
 
-        // 5-point discrete Laplacian
         const laplacian = 
           this.u[idx - 1] + 
           this.u[idx + 1] + 
@@ -161,32 +196,25 @@ class WaveErosionSimulation {
           4 * this.u[idx];
 
         let nextVal = (2 * this.u[idx] - this.uPrev[idx] + c2 * laplacian) * effectiveDamping;
-        
-        // Clamp extreme values
         if (nextVal > 40) nextVal = 40;
         if (nextVal < -40) nextVal = -40;
 
         this.uNext[idx] = nextVal;
 
-        // Wave Energy Density E ~ Amplitude^2
+        // Wave Energy
         const energy = nextVal * nextVal;
         this.energyMap[idx] = this.energyMap[idx] * 0.97 + energy * 0.03;
-        currentEnergySum += energy;
 
-        // Energy dissipation by fractal geometry roughness
         if (this.hasLandWithin(x, y, 1)) {
           dissipatedInStep += energy * (0.05 * (this.fractalD - 0.9));
         }
       }
     }
 
-    // Cycle arrays
     this.uPrev.set(this.u);
     this.u.set(this.uNext);
-
     this.dissipatedEnergy += dissipatedInStep;
 
-    // 3. Update sediment budget & erosion
     this.updateSediments();
   }
 
@@ -205,9 +233,6 @@ class WaveErosionSimulation {
     return false;
   }
 
-  /**
-   * Update sediment particles based on local wave stress and erosion
-   */
   updateSediments() {
     const scaleX = this.canvas.width / this.gridW;
     const scaleY = this.canvas.height / this.gridH;
@@ -218,32 +243,27 @@ class WaveErosionSimulation {
       const gx = Math.min(Math.max(Math.floor(s.x / scaleX), 0), this.gridW - 1);
       const gy = Math.min(Math.max(Math.floor(s.y / scaleY), 0), this.gridH - 1);
       const idx = gy * this.gridW + gx;
-
       const localEnergy = this.energyMap[idx];
-      
-      // Erosion stress threshold
-      if (localEnergy > 15) {
-        const erosionDamage = (localEnergy - 15) * 0.0015;
-        s.health -= erosionDamage;
-        erodedThisStep += erosionDamage * 2;
 
-        // Transport sediment particles offshore/longshore
+      if (localEnergy > 15) {
+        const damage = (localEnergy - 15) * 0.0015;
+        s.health -= damage;
+        erodedThisStep += damage * 2;
         s.y += (localEnergy * 0.02) * (Math.random() * 0.5 + 0.5);
         s.x += (Math.random() - 0.5) * 1.5;
       }
 
-      // Remove depleted sediment particles
       if (s.health <= 0 || s.y > this.canvas.height) {
         this.sediments.splice(i, 1);
       }
     }
 
     this.totalSediment = Math.max(0, this.totalSediment - erodedThisStep);
-    this.erosionRate = erodedThisStep * 60; // per second rate
+    this.erosionRate = erodedThisStep * 60;
   }
 
   /**
-   * Render the 2D Wave field, landmass, and sediment particles onto canvas
+   * Render wave field ensuring landmass is ALWAYS fully preserved and visible
    */
   render(viewMode = 'wave') {
     const { ctx, canvas } = this;
@@ -251,11 +271,9 @@ class WaveErosionSimulation {
     const height = canvas.height;
     const gw = this.gridW;
     const gh = this.gridH;
-
     const cellW = width / gw;
     const cellH = height / gh;
 
-    // Create pixel buffer for high performance 60fps rendering
     const imgData = ctx.createImageData(width, height);
     const pixels = imgData.data;
 
@@ -267,39 +285,54 @@ class WaveErosionSimulation {
         const pIdx = (y * width + x) * 4;
 
         if (this.landMask[gIdx] === 1) {
-          // Land styling (Green emerald terrain)
-          pixels[pIdx] = 22;     // R
-          pixels[pIdx + 1] = 101; // G
-          pixels[pIdx + 2] = 52;  // B
-          pixels[pIdx + 3] = 255;
+          // Check if coastline boundary for sandy shoreline
+          const isShoreline = !this.landMask[Math.max(0, gy - 1) * gw + gx] ||
+                              !this.landMask[Math.min(gh - 1, gy + 1) * gw + gx] ||
+                              !this.landMask[gy * gw + Math.max(0, gx - 1)] ||
+                              !this.landMask[gy * gw + Math.min(gw - 1, gx + 1)];
+
+          if (isShoreline) {
+            // Sandy Beach Gold
+            pixels[pIdx] = 234;     // R
+            pixels[pIdx + 1] = 179; // G
+            pixels[pIdx + 2] = 8;   // B
+            pixels[pIdx + 3] = 255;
+          } else {
+            // Lush Green Landmass
+            const tr = this.terrainColors[gIdx * 3] || 22;
+            const tg = this.terrainColors[gIdx * 3 + 1] || 101;
+            const tb = this.terrainColors[gIdx * 3 + 2] || 52;
+            pixels[pIdx] = tr;
+            pixels[pIdx + 1] = tg;
+            pixels[pIdx + 2] = tb;
+            pixels[pIdx + 3] = 255;
+          }
         } else {
+          // Ocean Water Rendering
           if (viewMode === 'energy') {
-            // Wave Energy & Stress Heatmap (Blue -> Cyan -> Yellow -> Red)
+            // Energy Heatmap in Ocean
             const energyVal = Math.min(this.energyMap[gIdx] / 60, 1.0);
             const r = Math.floor(Math.min(255, energyVal * 350));
             const g = Math.floor(Math.sin(energyVal * Math.PI) * 220);
             const b = Math.floor((1 - energyVal) * 240);
-
             pixels[pIdx] = r;
             pixels[pIdx + 1] = g;
             pixels[pIdx + 2] = b;
             pixels[pIdx + 3] = 255;
           } else {
-            // Wave Height Surface (Deep Navy -> Cyan Wave crests)
+            // Dynamic Wave Surface (Dark Navy -> Glowing Cyan Crests)
             const hVal = this.u[gIdx];
             const normH = Math.max(-1, Math.min(1, hVal / this.waveAmplitude));
 
             let r, g, b;
             if (normH >= 0) {
-              // Wave Crest: bright cyan / white foam
-              r = Math.floor(6 + normH * 160);
-              g = Math.floor(30 + normH * 210);
+              r = Math.floor(6 + normH * 170);
+              g = Math.floor(30 + normH * 220);
               b = Math.floor(70 + normH * 185);
             } else {
-              // Wave Trough: dark navy ocean deep
-              r = Math.floor(Math.max(2, 6 + normH * 5));
-              g = Math.floor(Math.max(8, 30 + normH * 20));
-              b = Math.floor(Math.max(25, 70 + normH * 45));
+              r = Math.floor(Math.max(4, 6 + normH * 5));
+              g = Math.floor(Math.max(12, 30 + normH * 20));
+              b = Math.floor(Math.max(35, 70 + normH * 45));
             }
 
             pixels[pIdx] = r;
@@ -313,7 +346,7 @@ class WaveErosionSimulation {
 
     ctx.putImageData(imgData, 0, 0);
 
-    // Draw Coastal Defenses overlay if active
+    // Defenses Overlay
     if (this.defenseType === 'mangrove') {
       ctx.fillStyle = 'rgba(74, 222, 128, 0.45)';
       ctx.strokeStyle = '#4ade80';
@@ -336,19 +369,16 @@ class WaveErosionSimulation {
       }
     }
 
-    // Draw Sediment particles (golden sand particles)
+    // Sediment Particles
     ctx.fillStyle = '#fde047';
     for (let i = 0; i < this.sediments.length; i++) {
       const s = this.sediments[i];
       ctx.beginPath();
-      ctx.arc(s.x, s.y, 1.8, 0, Math.PI * 2);
+      ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  /**
-   * Start 60fps physics simulation loop
-   */
   start(viewMode = 'wave', onUpdate = null) {
     if (this.isRunning) return;
     this.isRunning = true;
@@ -374,9 +404,6 @@ class WaveErosionSimulation {
     this.animationFrameId = requestAnimationFrame(loop);
   }
 
-  /**
-   * Stop physics simulation loop
-   */
   stop() {
     this.isRunning = false;
     if (this.animationFrameId) {
@@ -385,9 +412,6 @@ class WaveErosionSimulation {
     }
   }
 
-  /**
-   * Reset wave fields & sediment budget
-   */
   reset() {
     this.stop();
     this.u.fill(0);

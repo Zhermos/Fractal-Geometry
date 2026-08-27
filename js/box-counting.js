@@ -114,7 +114,9 @@ class BoxCounting {
     const occupiedStroke = options.occupiedStroke || 'rgba(34, 211, 238, 0.9)';
 
     ctx.save();
-    ctx.clearRect(0, 0, width, height);
+    if (options.clearCanvas !== false) {
+      ctx.clearRect(0, 0, width, height);
+    }
 
     // 1. Draw empty grid lines
     if (showEmptyGrid) {
