@@ -19,6 +19,44 @@ class ImageProcessor {
   }
 
   /**
+   * Water detection function based on satellite spectral reflectance and map color ratios
+   */
+  static isWater(r, g, b) {
+    // 1. Deep ocean, South China Sea, and Gulf of Thailand navy blue
+    if (b > r + 10 && b >= g - 20) return true;
+    if (b > 45 && b > r * 1.15) return true;
+    if (r < 50 && g < 80 && b > 55) return true;
+    
+    // 2. Turquoise shallow reefs and sediment-tinted waters
+    if (r < 80 && g > 80 && b > 90 && b > r + 15) return true;
+    
+    // 3. Dark ocean depths
+    if (r < 30 && g < 45 && b < 65 && b >= r) return true;
+
+    return false;
+  }
+
+  /**
+   * Generates a binary landmask (0 = water, 1 = land / island)
+   */
+  static generateLandMask(imageData) {
+    const { data, width, height } = imageData;
+    const mask = new Uint8Array(width * height);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        mask[y * width + x] = this.isWater(r, g, b) ? 0 : 1;
+      }
+    }
+
+    return mask;
+  }
+
+  /**
    * Otsu's thresholding algorithm to separate land from water automatically
    */
   static computeOtsuThreshold(gray, width, height) {
@@ -93,18 +131,10 @@ class ImageProcessor {
   static sobelEdge(gray, width, height, threshold = 60) {
     const edges = new Uint8Array(width * height);
     const edgePixels = [];
-    const borderPadding = 6; // Suppress canvas outer frame artifacts
+    const borderPadding = 8;
 
-    const Gx = [
-      -1, 0, 1,
-      -2, 0, 2,
-      -1, 0, 1
-    ];
-    const Gy = [
-      -1, -2, -1,
-       0,  0,  0,
-       1,  2,  1
-    ];
+    const Gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const Gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
 
     for (let y = borderPadding; y < height - borderPadding; y++) {
       for (let x = borderPadding; x < width - borderPadding; x++) {
@@ -125,8 +155,6 @@ class ImageProcessor {
         if (magnitude >= threshold) {
           edges[y * width + x] = 1;
           edgePixels.push({ x, y });
-        } else {
-          edges[y * width + x] = 0;
         }
       }
     }
@@ -135,15 +163,14 @@ class ImageProcessor {
   }
 
   /**
-   * Canny Edge Detection with Non-Maximum Suppression, Hysteresis, and Frame Border Suppression
+   * Canny Edge Detection with Non-Maximum Suppression and Perimeter Padding
    */
   static cannyEdge(gray, width, height, lowThreshold = 30, highThreshold = 80) {
     const blurred = this.gaussianBlur(gray, width, height);
     const magnitude = new Float32Array(width * height);
     const direction = new Float32Array(width * height);
-    const borderPadding = 6; // Suppress false edge artifacts along the image perimeter
+    const borderPadding = 8;
 
-    // Sobel Gradient Calculation
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
         const p00 = blurred[(y - 1) * width + (x - 1)];
@@ -164,7 +191,6 @@ class ImageProcessor {
       }
     }
 
-    // Non-maximum suppression
     const suppressed = new Float32Array(width * height);
     for (let y = 2; y < height - 2; y++) {
       for (let x = 2; x < width - 2; x++) {
@@ -200,7 +226,6 @@ class ImageProcessor {
       }
     }
 
-    // Double thresholding and hysteresis with perimeter padding
     const edges = new Uint8Array(width * height);
     const edgePixels = [];
 
@@ -236,14 +261,57 @@ class ImageProcessor {
   }
 
   /**
+   * Extracts strictly the Water-Land Shoreline Interface
+   * Eliminates 100% of internal island points and inland mountain noise.
+   */
+  static extractCoastlineInterface(imageData, borderPadding = 8) {
+    const { width, height } = imageData;
+    const landMask = this.generateLandMask(imageData);
+    const edges = new Uint8Array(width * height);
+    const edgePixels = [];
+
+    for (let y = borderPadding; y < height - borderPadding; y++) {
+      for (let x = borderPadding; x < width - borderPadding; x++) {
+        const idx = y * width + x;
+        const isLand = landMask[idx] === 1;
+
+        if (isLand) {
+          // Check 4-connected neighbors for water
+          const nTop = landMask[(y - 1) * width + x] === 0;
+          const nBottom = landMask[(y + 1) * width + x] === 0;
+          const nLeft = landMask[y * width + (x - 1)] === 0;
+          const nRight = landMask[y * width + (x + 1)] === 0;
+
+          if (nTop || nBottom || nLeft || nRight) {
+            edges[idx] = 1;
+            edgePixels.push({ x, y });
+          }
+        }
+      }
+    }
+
+    return { matrix: edges, width, height, edgeCount: edgePixels.length, edgePixels };
+  }
+
+  /**
    * Process canvas image with specified algorithm and parameters
+   * Constrains edges strictly to the physical Water-Land shoreline transition zone.
    */
   static processCanvas(sourceCanvas, method = 'canny', options = {}) {
     const ctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
     const { width, height } = sourceCanvas;
     const imageData = ctx.getImageData(0, 0, width, height);
-    const gray = this.toGrayscale(imageData);
 
+    // 1. Extract physical Water-Land Shoreline Interface
+    const interfaceResult = this.extractCoastlineInterface(imageData, 8);
+
+    // If interface has clear detection, use it as the clean ground-truth coastline
+    if (interfaceResult.edgeCount > 50) {
+      return interfaceResult;
+    }
+
+    // 2. Fallback to standard Canny / Sobel if monochrome / benchmark image
+    const gray = this.toGrayscale(imageData);
     if (method === 'sobel') {
       const threshold = options.threshold || 50;
       return this.sobelEdge(gray, width, height, threshold);

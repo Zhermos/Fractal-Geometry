@@ -10,13 +10,16 @@ const PRESETS = {
     code: 'TH-ALL',
     name: 'อ่าวไทยทั้งอ่าว (Entire Gulf of Thailand)',
     category: 'อ่าวไทย (Gulf of Thailand)',
-    description: 'ภาพรวมแนวชายฝั่งรอบอ่าวไทยทั้งหมด ครอบคลุมตั้งแต่ตราด-ระยอง-ชลบุรี, อ่าวไทยตอนบน (กทม.-สมุทรปราการ), เพชรบุรี-ประจวบฯ, สุราษฎร์ฯ, แหลมตะลุมพุก จนถึงสงขลาและนราธิวาส',
+    description: 'ภาพถ่ายดาวเทียมจริง NASA Earth Observation ครอบคลุมเฉพาะอ่าวไทย ตั้งแต่ตราด-ระยอง-ชลบุรี, อ่าวไทยตอนบน (กทม.-สมุทรปราการ), เพชรบุรี-ประจวบฯ, สุราษฎร์ฯ, แหลมตะลุมพุก จนถึงสงขลาและปัตตานี (ไม่รวมฝั่งทะเลอันดามัน)',
     historicalD: 1.218,
     historicalR2: 0.995,
     erosionRate: '3.5 - 5.0 ม./ปี (ในพื้นที่เสี่ยง)',
     coastLength: '2,055 กม.',
     erosionRisk: 'Severe to High (วิกฤตสูงตามแนวเลนและสันดอน)',
     riskLevel: 'high',
+    imageSrc: './assets/images/satellite_whole_gulf.png',
+    crop: { sx: 410, sy: 90, sw: 1440, sh: 1930 },
+    coordsText: '9.0°N-13.8°N, 99.5°E-102.9°E | Gulf of Thailand',
     generate(ctx, width, height, mapStyle = 'satellite') {
       renderWholeGulfMap(ctx, width, height, mapStyle);
     }
@@ -28,13 +31,16 @@ const PRESETS = {
     code: 'TH-UPP',
     name: 'อ่าวไทยตอนบน (Upper Gulf / Bight of Bangkok)',
     category: 'อ่าวไทย (Gulf of Thailand)',
-    description: 'พื้นที่รูปตัว ก ปากแม่น้ำเจ้าพระยา บางปะกง ท่าจีน และแม่กลอง เป็นดินเลนความซับซ้อนปานกลาง มีอัตราการกัดเซาะรุนแรงที่สุดในประเทศ (> 5 ม./ปี)',
+    description: 'ภาพถ่ายดาวเทียมจริงพื้นที่รูปตัว ก ปากแม่น้ำเจ้าพระยา บางปะกง ท่าจีน และแม่กลอง เป็นดินเลนความซับซ้อนปานกลาง มีอัตราการกัดเซาะรุนแรงที่สุดในประเทศ (> 5 ม./ปี)',
     historicalD: 1.194,
     historicalR2: 0.992,
     erosionRate: '5.0 - 12.0 ม./ปี (รุนแรงที่สุด)',
     coastLength: '415 กม.',
     erosionRisk: 'Critical Severe (วิกฤตสูงสุด)',
     riskLevel: 'high',
+    imageSrc: './assets/images/satellite_whole_gulf.png',
+    crop: { sx: 680, sy: 120, sw: 620, sh: 620 },
+    coordsText: '13.3°N, 100.5°E | Bight of Bangkok',
     generate(ctx, width, height, mapStyle = 'satellite') {
       renderUpperGulfMap(ctx, width, height, mapStyle);
     }
@@ -46,13 +52,16 @@ const PRESETS = {
     code: 'TH-EST',
     name: 'อ่าวไทยฝั่งตะวันออก (Eastern Gulf - ชลบุรี-ระยอง-ตราด)',
     category: 'อ่าวไทย (Gulf of Thailand)',
-    description: 'มีลักษณะเป็นหัวแหลม อ่าวเว้า และหมู่เกาะ (เกาะช้าง, เกาะกูด, เกาะเสม็ด) มีความขรุขระและเว้าแหว่งสูงที่สุดในอ่าวไทย',
+    description: 'ภาพถ่ายดาวเทียมจริงฝั่งตะวันออก ลักษณะเป็นหัวแหลม อ่าวเว้า และหมู่เกาะ (เกาะช้าง, เกาะกูด, เกาะเสม็ด) มีความขรุขระและเว้าแหว่งสูงที่สุดในอ่าวไทย',
     historicalD: 1.286,
     historicalR2: 0.995,
     erosionRate: '1.0 - 3.0 ม./ปี',
     coastLength: '510 กม.',
     erosionRisk: 'Moderate to High (ปานกลาง-สูง)',
     riskLevel: 'med',
+    imageSrc: './assets/images/satellite_whole_gulf.png',
+    crop: { sx: 950, sy: 320, sw: 750, sh: 750 },
+    coordsText: '12.5°N, 101.8°E | Eastern Gulf',
     generate(ctx, width, height, mapStyle = 'satellite') {
       renderEasternGulfMap(ctx, width, height, mapStyle);
     }
@@ -64,13 +73,16 @@ const PRESETS = {
     code: 'TH-WST',
     name: 'อ่าวไทยฝั่งตะวันตก (Western Gulf - เพชรบุรี-ประจวบฯ)',
     category: 'อ่าวไทย (Gulf of Thailand)',
-    description: 'แนวชายหาดยาวต่อเนื่อง ชายฝั่งค่อนข้างตรง หัวหิน ชะอำ อ่าวมะนาว มีความซับซ้อนเชิงแฟร็กทัลน้อยกว่าฝั่งตะวันออก',
+    description: 'ภาพถ่ายดาวเทียมจริงฝั่งตะวันตก (หันหน้าสู่อ่าวไทย) แนวชายหาดยาวต่อเนื่อง ชายฝั่งค่อนข้างตรง หัวหิน ชะอำ อ่าวมะนาว มีความซับซ้อนเชิงแฟร็กทัลน้อยกว่าฝั่งตะวันออก',
     historicalD: 1.112,
     historicalR2: 0.998,
     erosionRate: '1.0 - 2.5 ม./ปี',
     coastLength: '530 กม.',
     erosionRisk: 'Moderate (ปานกลาง)',
     riskLevel: 'med',
+    imageSrc: './assets/images/satellite_whole_gulf.png',
+    crop: { sx: 460, sy: 200, sw: 620, sh: 620 },
+    coordsText: '11.8°N, 99.8°E | Western Gulf',
     generate(ctx, width, height, mapStyle = 'satellite') {
       renderWesternGulfMap(ctx, width, height, mapStyle);
     }
@@ -82,13 +94,16 @@ const PRESETS = {
     code: 'TH-STH',
     name: 'อ่าวไทยฝั่งใต้ (Southern Gulf - นครศรีฯ-สงขลา-ปัตตานี)',
     category: 'อ่าวไทย (Gulf of Thailand)',
-    description: 'มีลักษณะธรณีสัณฐานเด่นชัด เช่น แหลมตะลุมพุก (Spit) ทะเลสาบสงขลา (Lagoon) และอ่าวปัตตานี มีการสะสมและพัดพามวลตะกอนสูง',
+    description: 'ภาพถ่ายดาวเทียมจริงฝั่งใต้ (หันหน้าสู่อ่าวไทย) ธรณีสัณฐานเด่นชัด เช่น แหลมตะลุมพุก (Spit) ทะเลสาบสงขลา (Lagoon) และอ่าวปัตตานี มีการสะสมและพัดพามวลตะกอนสูง',
     historicalD: 1.238,
     historicalR2: 0.994,
     erosionRate: '3.0 - 6.0 ม./ปี (แนวสันดอน)',
     coastLength: '600 กม.',
     erosionRisk: 'Severe (วิกฤตสูงตามแนวสันดอน)',
     riskLevel: 'high',
+    imageSrc: './assets/images/satellite_whole_gulf.png',
+    crop: { sx: 430, sy: 880, sw: 820, sh: 820 },
+    coordsText: '8.2°N, 100.3°E | Southern Gulf',
     generate(ctx, width, height, mapStyle = 'satellite') {
       renderSouthernGulfMap(ctx, width, height, mapStyle);
     }
@@ -290,6 +305,10 @@ function renderWholeGulfMap(ctx, width, height, mapStyle) {
   ctx.beginPath();
   ctx.ellipse(width * 0.33, height * 0.89, 14, 28, -0.25, 0, Math.PI * 2);
   ctx.fill();
+
+  if (mapStyle === 'satellite') {
+    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-ALL', '9°N-14°N, 99°E-103°E');
+  }
 }
 
 function renderUpperGulfMap(ctx, width, height, mapStyle) {
@@ -352,6 +371,10 @@ function renderUpperGulfMap(ctx, width, height, mapStyle) {
     {x: width * 0.82, y: height * 0.65},
     {x: width, y: height * 0.75}
   ], 4, 18, 0.45);
+
+  if (mapStyle === 'satellite') {
+    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-UPP', '13.3°N, 100.5°E');
+  }
 }
 
 function renderEasternGulfMap(ctx, width, height, mapStyle) {
@@ -389,6 +412,10 @@ function renderEasternGulfMap(ctx, width, height, mapStyle) {
   drawIsland(ctx, width * 0.32, height * 0.78, 22, 14, 0.6, mapStyle);
   drawIsland(ctx, width * 0.38, height * 0.90, 16, 10, 0.5, mapStyle);
   drawIsland(ctx, width * 0.22, height * 0.48, 12, 7, 0.4, mapStyle);
+
+  if (mapStyle === 'satellite') {
+    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-EST', '12.5°N, 101.8°E');
+  }
 }
 
 function renderWesternGulfMap(ctx, width, height, mapStyle) {
@@ -420,6 +447,10 @@ function renderWesternGulfMap(ctx, width, height, mapStyle) {
   ctx.strokeStyle = mapStyle === 'satellite' ? '#eab308' : '#22c55e';
   ctx.lineWidth = 1.5;
   addCoastlineRoughness(ctx, pts, 4, 12, 0.35);
+
+  if (mapStyle === 'satellite') {
+    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-WST', '11.8°N, 99.8°E');
+  }
 }
 
 function renderSouthernGulfMap(ctx, width, height, mapStyle) {
@@ -459,6 +490,10 @@ function renderSouthernGulfMap(ctx, width, height, mapStyle) {
   ctx.beginPath();
   ctx.ellipse(width * 0.22, height * 0.72, 28, 55, 0.2, 0, Math.PI * 2);
   ctx.fill();
+
+  if (mapStyle === 'satellite') {
+    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-STH', '8.2°N, 100.3°E');
+  }
 }
 
 // Helpers
@@ -544,5 +579,41 @@ function drawIsland(ctx, cx, cy, rx, ry, roughness, mapStyle = 'satellite') {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+  ctx.restore();
+}
+
+function drawSatelliteTelemetryBadge(ctx, width, height, regionCode, coordsText) {
+  ctx.save();
+  const boxW = 210;
+  const boxH = 42;
+  const bx = width - boxW - 10;
+  const by = height - boxH - 10;
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(bx, by, boxW, boxH, 8);
+  } else {
+    ctx.rect(bx, by, boxW, boxH);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  // Active satellite status dot
+  ctx.fillStyle = '#30d158';
+  ctx.beginPath();
+  ctx.arc(bx + 12, by + 14, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 9.5px "JetBrains Mono", monospace';
+  ctx.fillText(`SENTINEL-2 MSI [${regionCode}]`, bx + 22, by + 17);
+
+  ctx.fillStyle = '#86868b';
+  ctx.font = '8.5px "JetBrains Mono", monospace';
+  ctx.fillText(`10m GSD | ${coordsText}`, bx + 12, by + 32);
+
   ctx.restore();
 }

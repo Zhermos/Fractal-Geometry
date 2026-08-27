@@ -174,6 +174,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // --- Satellite Image Cache ---
+  const satelliteImageCache = {};
+
   // --- Preset Loading & Canvas Artwork Generation ---
   function loadSelectedPreset(presetId) {
     const preset = PRESETS[presetId];
@@ -186,10 +189,40 @@ document.addEventListener('DOMContentLoaded', () => {
     originalCanvas.height = 512;
     const ctx = originalCanvas.getContext('2d');
 
-    // Generate preset artwork with satellite/terrain style
-    preset.generate(ctx, 512, 512, currentMapStyle);
-
-    runFullPipeline();
+    // If preset has a genuine satellite photo file
+    if (preset.imageSrc) {
+      if (satelliteImageCache[preset.imageSrc]) {
+        const img = satelliteImageCache[preset.imageSrc];
+        const crop = preset.crop || { sx: 0, sy: 0, sw: img.naturalWidth || img.width, sh: img.naturalHeight || img.height };
+        ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, 512, 512);
+        runFullPipeline();
+        if (typeof drawSatelliteTelemetryBadge === 'function') {
+          drawSatelliteTelemetryBadge(ctx, 512, 512, preset.code, preset.coordsText || '9°N-14°N, 99°E-103°E');
+        }
+      } else {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          satelliteImageCache[preset.imageSrc] = img;
+          const crop = preset.crop || { sx: 0, sy: 0, sw: img.naturalWidth || img.width, sh: img.naturalHeight || img.height };
+          ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, 512, 512);
+          runFullPipeline();
+          if (typeof drawSatelliteTelemetryBadge === 'function') {
+            drawSatelliteTelemetryBadge(ctx, 512, 512, preset.code, preset.coordsText || '9°N-14°N, 99°E-103°E');
+          }
+        };
+        img.onerror = () => {
+          // Fallback to procedural satellite generation if image fails to load
+          preset.generate(ctx, 512, 512, currentMapStyle);
+          runFullPipeline();
+        };
+        img.src = preset.imageSrc;
+      }
+    } else {
+      // Mathematical Benchmark Presets (Straight Line, Koch Curve, etc.)
+      preset.generate(ctx, 512, 512, currentMapStyle);
+      runFullPipeline();
+    }
   }
 
   // --- Image Upload Handler ---
@@ -640,42 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- Auto-Tour Demo ---
-  if (autoTourBtn) {
-    autoTourBtn.addEventListener('click', () => {
-      if (isAutoTourRunning) return;
-      isAutoTourRunning = true;
-      autoTourBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin inline mr-1"></i> กำลังสาธิต...';
 
-      switchTab('pipeline');
-      selectPreset('whole_gulf');
-
-      let step = 0;
-      const tourInterval = setInterval(() => {
-        if (!boxCountingResult) return;
-        step++;
-        currentScaleIndex = (currentScaleIndex + 1) % boxCountingResult.scales.length;
-        renderGridScale(currentScaleIndex);
-
-        if (step >= 4) {
-          clearInterval(tourInterval);
-
-          setTimeout(() => {
-            switchTab('wave');
-            triggerWaveScenario('monsoon');
-
-            setTimeout(() => {
-              triggerWaveScenario('mangrove');
-              isAutoTourRunning = false;
-              autoTourBtn.innerHTML = '<i data-lucide="play-circle" class="w-4 h-4 mr-1"></i> เล่นตัวอย่างอัตโนมัติ';
-              if (window.lucide) lucide.createIcons();
-            }, 3000);
-
-          }, 1000);
-        }
-      }, 900);
-    });
-  }
 
   // --- Quick Scenario Trigger for Wave Sim ---
   function triggerWaveScenario(scenario) {

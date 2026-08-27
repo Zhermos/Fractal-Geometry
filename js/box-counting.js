@@ -152,7 +152,11 @@ class BoxCounting {
       ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(10, 10, 200, 52, 6);
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(10, 10, 200, 52, 6);
+      } else {
+        ctx.rect(10, 10, 200, 52);
+      }
       ctx.fill();
       ctx.stroke();
 
