@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const pastOverlayCanvas = document.getElementById('past-overlay-canvas');
   const modernOverlayCanvas = document.getElementById('modern-overlay-canvas');
   const dualOverlayCanvas = document.getElementById('dual-overlay-canvas');
-  const waveCanvas = document.getElementById('wave-canvas');
 
   // --- UI Elements & Buttons ---
   const presetCards = document.querySelectorAll('.preset-card');
@@ -23,16 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const pastScaleBadge = document.getElementById('past-scale-badge');
   const modernScaleBadge = document.getElementById('modern-scale-badge');
   const dualScaleBadge = document.getElementById('dual-scale-badge');
-
-  // Wave Simulation Controls
-  const waveStartBtn = document.getElementById('wave-start-btn');
-  const wavePauseBtn = document.getElementById('wave-pause-btn');
-  const waveResetBtn = document.getElementById('wave-reset-btn');
-  const waveAmpSlider = document.getElementById('wave-amp-slider');
-  const waveAmpVal = document.getElementById('wave-amp-val');
-  const defenseSelect = document.getElementById('defense-select');
-  const waveViewSelect = document.getElementById('wave-view-select');
-  const scenarioBtns = document.querySelectorAll('.scenario-btn');
 
   // Export Buttons
   const exportCsvBtn = document.getElementById('export-csv-btn');
@@ -52,12 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let logLogChart = null;
   let regionalComparisonChart = null;
   let regionalErosionChart = null;
-
-  // Simulation instance
-  let waveSim = null;
-  if (waveCanvas) {
-    waveSim = new WaveErosionSimulation(waveCanvas);
-  }
 
   // --- Map Style Selector ---
   if (mapStyleSelect) {
@@ -91,17 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Tab specific re-renders
-    if (targetTab === 'wave' && waveSim) {
-      if (originalCanvas) {
-        waveSim.loadLandFromCanvas(originalCanvas, olsResult ? olsResult.fractalDimension : 1.20);
-      }
-      waveSim.render(waveViewSelect ? waveViewSelect.value : 'wave');
-    } else if (targetTab === 'multitemporal') {
-      if (boxCountingResult) {
-        renderGridScale(currentScaleIndex);
-        updateTimeScalePills(currentScaleIndex);
-      }
-    } else if (targetTab === 'regional') {
+    if (targetTab === 'regional') {
       renderRegionalComparison();
     } else if (targetTab === 'calculation') {
       updateLiveCalculationGuide(boxCountingResult, olsResult);
@@ -295,10 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update Step-by-Step Live Calculation Guide
     updateLiveCalculationGuide(boxCountingResult, olsResult);
 
-    // Update Wave Simulation with full terrain/landmass preservation
-    if (waveSim) {
-      waveSim.loadLandFromCanvas(originalCanvas, olsResult ? olsResult.fractalDimension : 1.20);
-    }
   }
 
   // --- Render Box-Counting Scale on Overlay Canvases (Canvas 3 & Canvas 4) ---
@@ -352,19 +321,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // MODE 1: GRID OFF (PURE SATELLITE VIEW)
     // ==========================================
     if (index === -1) {
-      // 1. Single Box Grid Canvas in Computer Vision breakdown:
+      // 1. Single Box Grid Canvas in Computer Vision breakdown: Pure Satellite Imagery
       if (gridOverlayCanvas) {
         gridOverlayCanvas.width = width;
         gridOverlayCanvas.height = height;
         const gCtx = gridOverlayCanvas.getContext('2d');
         gCtx.drawImage(originalCanvas, 0, 0);
-        gCtx.drawImage(edgeCanvas, 0, 0);
       }
       if (currentScaleBadge) {
-        currentScaleBadge.textContent = 'ปิดตารางกล่อง (Pure View)';
+        currentScaleBadge.textContent = 'ภาพถ่ายดาวเทียมล้วน (Pure Satellite)';
       }
 
-      // 2. 1990 Past Satellite Canvas (Landsat 5 TM Baseline)
+      // 2. 1990 Past Satellite Canvas (Landsat 5 TM Baseline) - Pure Satellite Imagery
       if (pastOverlayCanvas) {
         pastOverlayCanvas.width = width;
         pastOverlayCanvas.height = height;
@@ -374,30 +342,12 @@ document.addEventListener('DOMContentLoaded', () => {
         pCtx.filter = 'sepia(0.24) contrast(1.10) brightness(0.95) saturate(1.18)';
         pCtx.drawImage(originalCanvas, 0, 0);
         pCtx.filter = 'none';
-
-        // Draw Historical 1990 Extended Shoreline (Gold #facc15)
-        pCtx.shadowColor = '#facc15';
-        pCtx.shadowBlur = 6;
-        pCtx.fillStyle = '#facc15';
-        pastPixels.forEach(p => {
-          pCtx.fillRect(p.x - 1, p.y - 1, 2.5, 2.5);
-        });
-        pCtx.shadowBlur = 0;
-
-        // Vintage Landsat 5 Sensor Badge
-        pCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-        pCtx.fillRect(8, 8, 185, 22);
-        pCtx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
-        pCtx.strokeRect(8.5, 8.5, 184, 21);
-        pCtx.fillStyle = '#facc15';
-        pCtx.font = 'bold 11px monospace';
-        pCtx.fillText('LANDSAT-5 TM (1990) 30m', 14, 23);
       }
       if (pastScaleBadge) {
-        pastScaleBadge.textContent = '1990 Baseline (Landsat 5)';
+        pastScaleBadge.textContent = 'ภาพดาวเทียมอดีต 1990 (Pure View)';
       }
 
-      // 3. 2024 Modern Satellite Canvas (Sentinel-2 MSI)
+      // 3. 2024 Modern Satellite Canvas (Sentinel-2 MSI) - Pure Satellite Imagery
       if (modernOverlayCanvas) {
         modernOverlayCanvas.width = width;
         modernOverlayCanvas.height = height;
@@ -407,68 +357,20 @@ document.addEventListener('DOMContentLoaded', () => {
         mCtx.filter = 'contrast(1.08) saturate(1.22) brightness(1.02)';
         mCtx.drawImage(originalCanvas, 0, 0);
         mCtx.filter = 'none';
-
-        // Draw 2024 Retreated Shoreline (Cyan #38bdf8)
-        mCtx.shadowColor = '#38bdf8';
-        mCtx.shadowBlur = 6;
-        mCtx.fillStyle = '#38bdf8';
-        binaryResult.edgePixels.forEach(p => {
-          mCtx.fillRect(p.x - 1, p.y - 1, 2.5, 2.5);
-        });
-        mCtx.shadowBlur = 0;
-
-        // Modern Sentinel-2 Sensor Badge
-        mCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-        mCtx.fillRect(8, 8, 195, 22);
-        mCtx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-        mCtx.strokeRect(8.5, 8.5, 194, 21);
-        mCtx.fillStyle = '#38bdf8';
-        mCtx.font = 'bold 11px monospace';
-        mCtx.fillText('SENTINEL-2 MSI (2024) 10m', 14, 23);
       }
       if (modernScaleBadge) {
-        modernScaleBadge.textContent = '2024 Modern (Sentinel-2)';
+        modernScaleBadge.textContent = 'ภาพดาวเทียมปัจจุบัน 2024 (Pure View)';
       }
 
-      // 4. Dual Superimposed Canvas
+      // 4. Dual Superimposed Canvas - Pure Satellite Imagery
       if (dualOverlayCanvas) {
         dualOverlayCanvas.width = width;
         dualOverlayCanvas.height = height;
         const dCtx = dualOverlayCanvas.getContext('2d');
-
         dCtx.drawImage(originalCanvas, 0, 0);
-        dCtx.fillStyle = 'rgba(10, 15, 25, 0.45)';
-        dCtx.fillRect(0, 0, width, height);
-
-        // Draw 34-Year Erosion Loss Band (Shaded Coral-Red)
-        dCtx.fillStyle = 'rgba(255, 69, 58, 0.40)';
-        pastPixels.forEach(p => {
-          dCtx.fillRect(p.x - 2, p.y - 2, 4, 4);
-        });
-
-        // 1990 Baseline Trace (Gold)
-        dCtx.fillStyle = '#facc15';
-        pastPixels.forEach(p => {
-          dCtx.fillRect(p.x - 1, p.y - 1, 2, 2);
-        });
-
-        // 2024 Modern Retreated Trace (Cyan)
-        dCtx.fillStyle = '#38bdf8';
-        binaryResult.edgePixels.forEach(p => {
-          dCtx.fillRect(p.x - 1, p.y - 1, 2, 2);
-        });
-
-        // Dual Telemetry Tag
-        dCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-        dCtx.fillRect(8, 8, 220, 22);
-        dCtx.strokeStyle = 'rgba(48, 209, 88, 0.5)';
-        dCtx.strokeRect(8.5, 8.5, 219, 21);
-        dCtx.fillStyle = '#30d158';
-        dCtx.font = 'bold 11px monospace';
-        dCtx.fillText('Δ 34-YEAR COASTAL RETREAT', 14, 23);
       }
       if (dualScaleBadge) {
-        dualScaleBadge.textContent = '1990 ⟷ 2024 (ภาพดาวเทียมล้วน)';
+        dualScaleBadge.textContent = 'ภาพถ่ายดาวเทียมล้วน (Pure Satellite)';
       }
 
       highlightScaleTableRow(-1);
@@ -1049,141 +951,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-  // --- Quick Scenario Trigger for Wave Sim ---
-  function triggerWaveScenario(scenario) {
-    if (!waveSim) return;
-    waveSim.stop();
-
-    if (scenario === 'normal') {
-      waveSim.waveAmplitude = 10;
-      waveSim.defenseType = 'none';
-      if (waveAmpSlider) waveAmpSlider.value = 10;
-      if (waveAmpVal) waveAmpVal.textContent = '10 m';
-      if (defenseSelect) defenseSelect.value = 'none';
-    } else if (scenario === 'monsoon') {
-      waveSim.waveAmplitude = 22;
-      waveSim.defenseType = 'none';
-      if (waveAmpSlider) waveAmpSlider.value = 22;
-      if (waveAmpVal) waveAmpVal.textContent = '22 m';
-      if (defenseSelect) defenseSelect.value = 'none';
-    } else if (scenario === 'mangrove') {
-      waveSim.waveAmplitude = 18;
-      waveSim.defenseType = 'mangrove';
-      if (waveAmpSlider) waveAmpSlider.value = 18;
-      if (waveAmpVal) waveAmpVal.textContent = '18 m';
-      if (defenseSelect) defenseSelect.value = 'mangrove';
-    } else if (scenario === 'breakwater') {
-      waveSim.waveAmplitude = 18;
-      waveSim.defenseType = 'breakwater';
-      if (waveAmpSlider) waveAmpSlider.value = 18;
-      if (waveAmpVal) waveAmpVal.textContent = '18 m';
-      if (defenseSelect) defenseSelect.value = 'breakwater';
-    }
-
-    waveSim.start('wave', (stats) => {
-      const sedSpan = document.getElementById('wave-stat-sediment');
-      const lossSpan = document.getElementById('wave-stat-loss');
-      const dissSpan = document.getElementById('wave-stat-dissipation');
-      if (sedSpan) sedSpan.textContent = `${stats.totalSediment.toFixed(0)} หน่วย`;
-      if (lossSpan) lossSpan.textContent = `${stats.sedimentLossPercent.toFixed(1)}%`;
-      if (dissSpan) dissSpan.textContent = `${stats.dissipatedEnergy.toFixed(0)} J/m`;
-    });
-  }
-
-  scenarioBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      triggerWaveScenario(btn.dataset.scenario);
-    });
-  });
-
-  // Wave Simulation Controls
-  if (waveStartBtn) {
-    waveStartBtn.addEventListener('click', () => {
-      if (waveSim) {
-        const viewMode = waveViewSelect ? waveViewSelect.value : 'wave';
-        waveSim.start(viewMode, (stats) => {
-          const sedSpan = document.getElementById('wave-stat-sediment');
-          const lossSpan = document.getElementById('wave-stat-loss');
-          const dissSpan = document.getElementById('wave-stat-dissipation');
-          if (sedSpan) sedSpan.textContent = `${Math.round(stats.totalSediment).toLocaleString()} หน่วย`;
-          if (lossSpan) lossSpan.textContent = `${stats.sedimentLossPercent.toFixed(1)}%`;
-          if (dissSpan) dissSpan.textContent = `${Math.round(stats.dissipatedEnergy).toLocaleString()} J/m`;
-        });
-      }
-    });
-  }
-
-  if (wavePauseBtn) {
-    wavePauseBtn.addEventListener('click', () => {
-      if (waveSim) waveSim.stop();
-    });
-  }
-
-  if (waveResetBtn) {
-    waveResetBtn.addEventListener('click', () => {
-      if (waveSim) waveSim.reset();
-    });
-  }
-
-  if (waveAmpSlider && waveAmpVal) {
-    waveAmpSlider.addEventListener('input', (e) => {
-      const amp = parseFloat(e.target.value);
-      waveAmpVal.textContent = `${amp} m`;
-      if (waveSim) waveSim.waveAmplitude = amp;
-    });
-  }
-
-  if (defenseSelect) {
-    defenseSelect.addEventListener('change', (e) => {
-      if (waveSim) waveSim.defenseType = e.target.value;
-    });
-  }
-
-  if (waveViewSelect) {
-    waveViewSelect.addEventListener('change', (e) => {
-      if (waveSim) waveSim.render(e.target.value);
-    });
-  }
-
-  // --- Scenario Quick Presets ---
-  if (scenarioBtns) {
-    scenarioBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const scenario = btn.dataset.scenario;
-        if (!waveSim) return;
-
-        if (scenario === 'normal') {
-          waveSim.waveAmplitude = 10;
-          waveSim.defenseType = 'none';
-          if (waveAmpSlider) waveAmpSlider.value = 10;
-          if (waveAmpVal) waveAmpVal.textContent = '10 m';
-          if (defenseSelect) defenseSelect.value = 'none';
-        } else if (scenario === 'monsoon') {
-          waveSim.waveAmplitude = 22;
-          waveSim.defenseType = 'none';
-          if (waveAmpSlider) waveAmpSlider.value = 22;
-          if (waveAmpVal) waveAmpVal.textContent = '22 m';
-          if (defenseSelect) defenseSelect.value = 'none';
-        } else if (scenario === 'mangrove') {
-          waveSim.waveAmplitude = 14;
-          waveSim.defenseType = 'mangrove';
-          if (waveAmpSlider) waveAmpSlider.value = 14;
-          if (waveAmpVal) waveAmpVal.textContent = '14 m';
-          if (defenseSelect) defenseSelect.value = 'mangrove';
-        } else if (scenario === 'breakwater') {
-          waveSim.waveAmplitude = 14;
-          waveSim.defenseType = 'breakwater';
-          if (waveAmpSlider) waveAmpSlider.value = 14;
-          if (waveAmpVal) waveAmpVal.textContent = '14 m';
-          if (defenseSelect) defenseSelect.value = 'breakwater';
-        }
-
-        waveSim.reset();
-        waveSim.render(waveViewSelect ? waveViewSelect.value : 'wave');
-      });
-    });
-  }
-
   // --- Export Data Features ---
   function exportCSV() {
     if (!boxCountingResult || !olsResult) return;
@@ -1384,8 +1151,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnExport4kSingle) {
     btnExport4kSingle.addEventListener('click', () => {
-      showExportProgress('กำลังเรนเดอร์ 4K Modern Box Grid (3840 × 3840 px)...', () => {
-        export4KImage('single');
+      showExportProgress('กำลังเรนเดอร์ภาพถ่ายดาวเทียม 4K Ultra HD (3840 × 3840 px)...', () => {
+        export4KImage('pure');
         close4KModal();
       });
     });
@@ -1403,12 +1170,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function export4KImage(mode = 'dual') {
     if (!boxCountingResult || !binaryResult) return;
 
-    const scale = boxCountingResult.scales[currentScaleIndex] || boxCountingResult.scales[0];
+    // Pick optimal fractal scale (if grid is closed, default to crisp 32px scale)
+    let scale = boxCountingResult.scales[currentScaleIndex];
+    if (!scale || currentScaleIndex === -1) {
+      scale = boxCountingResult.scales.find(s => s.boxSize === 32) || boxCountingResult.scales[3] || boxCountingResult.scales[0];
+    }
+
     const preset = PRESETS[currentPresetId] || {};
     const regionName = preset.name || 'อ่าวไทย (Gulf of Thailand)';
     const regionCode = preset.technicalCode || 'TH-ALL';
 
-    if (mode === 'dual' || mode === 'single') {
+    if (mode === 'dual' || mode === 'single' || mode === 'pure') {
       // --- 4K Square Export (3840 x 3840 px • 14.7 Megapixels) ---
       const exportCanvas = document.createElement('canvas');
       exportCanvas.width = 3840;
@@ -1419,26 +1191,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const H = exportCanvas.height;
       const S = W / 512; // 7.5x scaling multiplier
 
-      // 1. Dark Background Fill
-      ctx.fillStyle = '#080d1a';
+      // 1. Clean Deep Background
+      ctx.fillStyle = '#060a14';
       ctx.fillRect(0, 0, W, H);
 
-      // 2. High-Res Satellite Backdrop
+      // 2. High-Res Satellite Backdrop (Crystal Clear & Sharp, NO heavy dark veil!)
       const crop = preset.crop || { sx: 410, sy: 90, sw: 1440, sh: 1930 };
       const satImg = satelliteImageCache[preset.imageSrc];
       if (satImg && satImg.complete && satImg.naturalWidth > 0) {
         ctx.drawImage(satImg, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, W, H);
-        ctx.fillStyle = 'rgba(8, 13, 26, 0.55)';
-        ctx.fillRect(0, 0, W, H);
       } else {
         ctx.drawImage(originalCanvas, 0, 0, 512, 512, 0, 0, W, H);
-        ctx.fillStyle = 'rgba(8, 13, 26, 0.55)';
-        ctx.fillRect(0, 0, W, H);
       }
+
+      if (mode === 'pure' || mode === 'single') {
+        // --- 100% PURE SATELLITE 4K VIEW (NO GRID, NO MASKS, 100% PURE PHOTOGRAPHY) ---
+        ctx.fillStyle = 'rgba(6, 10, 20, 0.88)';
+        ctx.fillRect(0, H - 120, W, 120);
+        ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`${regionName} [${regionCode}] • Sentinel-2 True-Color 4K Ultra-HD (3840 × 3840 px • 14.7 MP)`, 80, H - 62);
+        ctx.font = '400 20px system-ui, -apple-system, sans-serif';
+        ctx.fillStyle = '#86868b';
+        ctx.fillText('European Space Agency (Copernicus) & USGS Landsat • Thailand Marine and Coastal Resources Research', 80, H - 26);
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `satellite_imagery_4k_${currentPresetId}_${timestamp}.png`;
+        downloadCanvas(exportCanvas, filename);
+        return;
+      }
+
+      // --- DUAL BOX GRID 4K VIEW ---
+      // Subtle contrast pass so vector grid lines pop cleanly over land and ocean
+      ctx.fillStyle = 'rgba(6, 10, 20, 0.32)';
+      ctx.fillRect(0, 0, W, H);
 
       // 3. Crisp 4K Grid Lines
       const boxSize4K = scale.boxSize * S;
-      ctx.strokeStyle = scale.boxSize <= 4 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = scale.boxSize <= 4 ? 'rgba(255, 255, 255, 0.09)' : 'rgba(255, 255, 255, 0.18)';
       ctx.lineWidth = scale.boxSize <= 4 ? 1.0 : 2.0;
       ctx.beginPath();
       for (let x = 0; x <= W; x += boxSize4K) {
@@ -1451,139 +1241,124 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       ctx.stroke();
 
-      if (mode === 'dual') {
-        // --- Compute Past Baseline Boxes at 4K ---
-        const origCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
-        const imgData = origCtx.getImageData(0, 0, 512, 512);
-        const landMask = ImageProcessor.generateLandMask(imgData);
-        const retreatShift = Math.max(3, Math.min(18, Math.round((preset.annualErosionRate ? 180 : 120) / 40)));
+      // Compute Past Baseline Boxes at 4K
+      const origCtx = originalCanvas.getContext('2d', { willReadFrequently: true });
+      const imgData = origCtx.getImageData(0, 0, 512, 512);
+      const landMask = ImageProcessor.generateLandMask(imgData);
+      const retreatShift = Math.max(3, Math.min(18, Math.round((preset.annualErosionRate ? 180 : 120) / 40)));
 
-        const pastMatrix = new Uint8Array(512 * 512);
-        const pastPixels = [];
+      const pastMatrix = new Uint8Array(512 * 512);
+      const pastPixels = [];
 
-        binaryResult.edgePixels.forEach(p => {
-          let dx = 0, dy = 0;
-          for (let oy = -2; oy <= 2; oy++) {
-            for (let ox = -2; ox <= 2; ox++) {
-              const nx = p.x + ox;
-              const ny = p.y + oy;
-              if (nx >= 0 && nx < 512 && ny >= 0 && ny < 512) {
-                if (landMask[ny * 512 + nx] === 0) {
-                  dx += ox;
-                  dy += oy;
-                }
+      binaryResult.edgePixels.forEach(p => {
+        let dx = 0, dy = 0;
+        for (let oy = -2; oy <= 2; oy++) {
+          for (let ox = -2; ox <= 2; ox++) {
+            const nx = p.x + ox;
+            const ny = p.y + oy;
+            if (nx >= 0 && nx < 512 && ny >= 0 && ny < 512) {
+              if (landMask[ny * 512 + nx] === 0) {
+                dx += ox;
+                dy += oy;
               }
             }
           }
-          const dist = Math.hypot(dx, dy);
-          let sx = p.x;
-          let sy = p.y;
-          if (dist > 0) {
-            sx = Math.round(p.x + (dx / dist) * retreatShift);
-            sy = Math.round(p.y + (dy / dist) * retreatShift);
-          }
-          sx = Math.max(0, Math.min(511, sx));
-          sy = Math.max(0, Math.min(511, sy));
-          pastMatrix[sy * 512 + sx] = 1;
-          pastPixels.push({ x: sx, y: sy });
-        });
+        }
+        const dist = Math.hypot(dx, dy);
+        let sx = p.x;
+        let sy = p.y;
+        if (dist > 0) {
+          sx = Math.round(p.x + (dx / dist) * retreatShift);
+          sy = Math.round(p.y + (dy / dist) * retreatShift);
+        }
+        sx = Math.max(0, Math.min(511, sx));
+        sy = Math.max(0, Math.min(511, sy));
+        pastMatrix[sy * 512 + sx] = 1;
+        pastPixels.push({ x: sx, y: sy });
+      });
 
-        const pastBinary = { matrix: pastMatrix, width: 512, height: 512, edgeCount: pastPixels.length, edgePixels: pastPixels };
-        const pastAnalysis = BoxCounting.analyze(pastBinary, [scale.boxSize]);
-        const pastScale = pastAnalysis.scales[0] || { count: 0, occupiedBoxes: [] };
+      const pastBinary = { matrix: pastMatrix, width: 512, height: 512, edgeCount: pastPixels.length, edgePixels: pastPixels };
+      const pastAnalysis = BoxCounting.analyze(pastBinary, [scale.boxSize]);
+      const pastScale = pastAnalysis.scales[0] || { count: 0, occupiedBoxes: [] };
 
-        const modernBoxes = new Set(scale.occupiedBoxes.map(b => `${b.x},${b.y}`));
-        const pastBoxes = new Set(pastScale.occupiedBoxes.map(b => `${b.x},${b.y}`));
+      const modernBoxes = new Set(scale.occupiedBoxes.map(b => `${b.x},${b.y}`));
+      const pastBoxes = new Set(pastScale.occupiedBoxes.map(b => `${b.x},${b.y}`));
 
-        // 4. Render 4K 1990 Baseline Occupied Boxes (Gold / Green)
-        ctx.lineWidth = scale.boxSize <= 4 ? 1.5 : 4.0;
-        pastBoxes.forEach(k => {
+      // 4. Render 4K 1990 Baseline Occupied Boxes (Coral-Red for Loss / Emerald Green for Stable)
+      ctx.lineWidth = scale.boxSize <= 4 ? 1.5 : 4.0;
+      pastBoxes.forEach(k => {
+        const [px, py] = k.split(',').map(Number);
+        const px4K = px * S;
+        const py4K = py * S;
+
+        if (modernBoxes.has(k)) {
+          // Overlapping -> Emerald Green
+          ctx.fillStyle = 'rgba(48, 209, 88, 0.45)';
+          ctx.strokeStyle = '#30d158';
+        } else {
+          // Past Only (Eroded in 34 Years) -> Coral-Red
+          ctx.fillStyle = 'rgba(255, 69, 58, 0.50)';
+          ctx.strokeStyle = '#ff453a';
+        }
+        ctx.fillRect(px4K, py4K, boxSize4K, boxSize4K);
+        if (scale.boxSize > 2) {
+          ctx.strokeRect(px4K + 1, py4K + 1, boxSize4K - 2, boxSize4K - 2);
+        }
+      });
+
+      // 5. Render 4K 2024 Modern Occupied Boxes (Cyan)
+      modernBoxes.forEach(k => {
+        if (!pastBoxes.has(k)) {
           const [px, py] = k.split(',').map(Number);
           const px4K = px * S;
           const py4K = py * S;
 
-          if (modernBoxes.has(k)) {
-            // Overlapping -> Emerald Green
-            ctx.fillStyle = 'rgba(48, 209, 88, 0.45)';
-            ctx.strokeStyle = '#30d158';
-          } else {
-            // Past Only (Eroded in 34 Years) -> Coral-Red
-            ctx.fillStyle = 'rgba(255, 69, 58, 0.50)';
-            ctx.strokeStyle = '#ff453a';
-          }
-          ctx.fillRect(px4K, py4K, boxSize4K, boxSize4K);
-          if (scale.boxSize > 2) {
-            ctx.strokeRect(px4K + 1, py4K + 1, boxSize4K - 2, boxSize4K - 2);
-          }
-        });
-
-        // 5. Render 4K 2024 Modern Occupied Boxes (Cyan)
-        modernBoxes.forEach(k => {
-          if (!pastBoxes.has(k)) {
-            const [px, py] = k.split(',').map(Number);
-            const px4K = px * S;
-            const py4K = py * S;
-
-            ctx.fillStyle = 'rgba(41, 151, 255, 0.55)';
-            ctx.strokeStyle = '#2997ff';
-            ctx.fillRect(px4K, py4K, boxSize4K, boxSize4K);
-            if (scale.boxSize > 2) {
-              ctx.strokeRect(px4K + 1, py4K + 1, boxSize4K - 2, boxSize4K - 2);
-            }
-          }
-        });
-
-        // 7. Scientific 4K Telemetry HUD Overlay
-        const hudW = 1260;
-        const hudH = 360;
-        const hudX = 80;
-        const hudY = 80;
-
-        ctx.fillStyle = 'rgba(10, 14, 24, 0.94)';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') {
-          ctx.roundRect(hudX, hudY, hudW, hudH, 24);
-        } else {
-          ctx.rect(hudX, hudY, hudW, hudH);
-        }
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.font = 'bold 40px system-ui, -apple-system, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${regionName} [${regionCode}]`, hudX + 40, hudY + 70);
-
-        ctx.font = '500 28px system-ui, -apple-system, sans-serif';
-        ctx.fillStyle = '#86868b';
-        ctx.fillText(`Multi-Temporal Fractal Box-Counting Simulation • ε = ${scale.boxSize} px (${(scale.boxSize * 10).toLocaleString()} m)`, hudX + 40, hudY + 122);
-
-        ctx.font = 'bold 34px monospace';
-        ctx.fillStyle = '#facc15';
-        ctx.fillText(`• 1990 Baseline:  N = ${pastScale.count.toLocaleString()} กล่อง  (D = ${(olsResult ? olsResult.fractalDimension - 0.056 : 1.15).toFixed(4)})`, hudX + 40, hudY + 190);
-
-        ctx.fillStyle = '#2997ff';
-        ctx.fillText(`• 2024 Sentinel-2: N = ${scale.count.toLocaleString()} กล่อง  (D = ${(olsResult ? olsResult.fractalDimension : 1.218).toFixed(4)})`, hudX + 40, hudY + 250);
-
-        ctx.fillStyle = '#30d158';
-        ctx.fillText(`• Net Coastal Shift: ΔN = +${Math.max(0, scale.count - pastScale.count)} กล่อง | R² = ${(olsResult ? olsResult.r2 * 100 : 99.5).toFixed(2)}% (OLS)`, hudX + 40, hudY + 310);
-      } else {
-        // --- Single Modern Box Counting at 4K ---
-        ctx.lineWidth = scale.boxSize <= 4 ? 1.5 : 4.0;
-        scale.occupiedBoxes.forEach(b => {
-          const px4K = b.x * S;
-          const py4K = b.y * S;
-          ctx.fillStyle = 'rgba(41, 151, 255, 0.45)';
+          ctx.fillStyle = 'rgba(41, 151, 255, 0.55)';
           ctx.strokeStyle = '#2997ff';
           ctx.fillRect(px4K, py4K, boxSize4K, boxSize4K);
           if (scale.boxSize > 2) {
             ctx.strokeRect(px4K + 1, py4K + 1, boxSize4K - 2, boxSize4K - 2);
           }
-        });
-      }
+        }
+      });
 
-      // 8. Bottom 4K Research Watermark
+      // 6. Scientific 4K Telemetry HUD Overlay
+      const hudW = 1260;
+      const hudH = 360;
+      const hudX = 80;
+      const hudY = 80;
+
+      ctx.fillStyle = 'rgba(10, 14, 24, 0.94)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(hudX, hudY, hudW, hudH, 24);
+      } else {
+        ctx.rect(hudX, hudY, hudW, hudH);
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = 'bold 40px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${regionName} [${regionCode}]`, hudX + 40, hudY + 70);
+
+      ctx.font = '500 28px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#86868b';
+      ctx.fillText(`Multi-Temporal Fractal Box-Counting Simulation • ε = ${scale.boxSize} px (${(scale.boxSize * 10).toLocaleString()} m)`, hudX + 40, hudY + 122);
+
+      ctx.font = 'bold 34px monospace';
+      ctx.fillStyle = '#facc15';
+      ctx.fillText(`• 1990 Baseline:  N = ${pastScale.count.toLocaleString()} กล่อง  (D = ${(olsResult ? olsResult.fractalDimension - 0.056 : 1.15).toFixed(4)})`, hudX + 40, hudY + 190);
+
+      ctx.fillStyle = '#2997ff';
+      ctx.fillText(`• 2024 Sentinel-2: N = ${scale.count.toLocaleString()} กล่อง  (D = ${(olsResult ? olsResult.fractalDimension : 1.218).toFixed(4)})`, hudX + 40, hudY + 250);
+
+      ctx.fillStyle = '#30d158';
+      ctx.fillText(`• Net Coastal Shift: ΔN = +${Math.max(0, scale.count - pastScale.count)} กล่อง | R² = ${(olsResult ? olsResult.r2 * 100 : 99.5).toFixed(2)}% (OLS)`, hudX + 40, hudY + 310);
+
+      // 7. Bottom 4K Research Watermark
       ctx.fillStyle = 'rgba(10, 14, 24, 0.90)';
       ctx.fillRect(0, H - 120, W, 120);
       ctx.font = '500 24px system-ui, -apple-system, sans-serif';
@@ -1591,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillText('Gulf of Thailand Fractal Geometry & Coastal Erosion Modeling • Ultra-HD 4K Export (3840 × 3840 px • 14.7 MP)', 80, H - 48);
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `fractal_coastline_4k_${mode}_${currentPresetId}_eps${scale.boxSize}px_${timestamp}.png`;
+      const filename = `fractal_coastline_4k_dual_${currentPresetId}_eps${scale.boxSize}px_${timestamp}.png`;
       downloadCanvas(exportCanvas, filename);
     } else if (mode === 'poster') {
       // --- 4K Scientific Research Poster (3840 x 2160 px • 16:9 Landscape) ---

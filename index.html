@@ -94,21 +94,17 @@
           <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
           <span class="whitespace-nowrap font-medium">1. Studio</span>
         </button>
-        <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5 whitespace-nowrap" data-tab="wave">
-          <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
-          <span class="whitespace-nowrap">2. Wave</span>
-        </button>
         <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5 whitespace-nowrap" data-tab="calculation">
           <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-          <span class="whitespace-nowrap">3. Math Guide</span>
+          <span class="whitespace-nowrap">2. Math Guide</span>
         </button>
         <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5 whitespace-nowrap" data-tab="regional">
           <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
-          <span class="whitespace-nowrap">4. Regional</span>
+          <span class="whitespace-nowrap">3. Regional</span>
         </button>
         <button class="nav-tab-btn hover:text-white transition-colors text-[#86868b] flex items-center gap-1.5 whitespace-nowrap" data-tab="theory">
           <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
-          <span class="whitespace-nowrap">5. Theory</span>
+          <span class="whitespace-nowrap">4. Theory</span>
         </button>
       </div>
 
@@ -129,10 +125,9 @@
     <!-- Mobile Navigation Sub-bar -->
     <div class="lg:hidden flex space-x-3 overflow-x-auto px-4 py-2 border-t border-white/5 text-xs text-[#86868b] scrollbar-none">
       <button class="nav-tab-btn whitespace-nowrap text-white font-medium flex-shrink-0" data-tab="pipeline">1. Studio</button>
-      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="wave">2. Wave</button>
-      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="calculation">3. Math Guide</button>
-      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="regional">4. Regional</button>
-      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="theory">5. Theory</button>
+      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="calculation">2. Math Guide</button>
+      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="regional">3. Regional</button>
+      <button class="nav-tab-btn whitespace-nowrap flex-shrink-0" data-tab="theory">4. Theory</button>
     </div>
   </nav>
 
@@ -701,148 +696,9 @@
 
     </section>
 
-    <!-- ================= TAB 2: WAVE & EROSION SIMULATION ================= -->
-    <section id="tab-pane-wave" class="tab-pane hidden space-y-8">
-      
-      <!-- Scenarios Bento with Vector SVGs -->
-      <div class="apple-card p-6 space-y-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-xs uppercase tracking-widest text-[#86868b] font-semibold block mb-1">Simulation Preset Scenarios</span>
-            <h3 class="text-lg font-bold text-white tracking-tight">Quick Physics Scenarios</h3>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="normal">
-            <div class="font-semibold text-white mb-1 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>
-              <span>Normal Waves</span>
-            </div>
-            <p class="text-[11px] text-[#86868b]">คลื่นลมสงบตามธรรมชาติ</p>
-          </button>
-
-          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="monsoon">
-            <div class="font-semibold text-[#ff453a] mb-1 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-[#ff453a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>
-              <span>Severe Monsoon</span>
-            </div>
-            <p class="text-[11px] text-[#86868b]">คลื่นมรสุมกัดเซาะรุนแรง</p>
-          </button>
-
-          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="mangrove">
-            <div class="font-semibold text-[#30d158] mb-1 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-[#30d158]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-              <span>Mangrove Buffer</span>
-            </div>
-            <p class="text-[11px] text-[#86868b]">รากโกงกางสลายพลังงานคลื่น</p>
-          </button>
-
-          <button class="scenario-btn p-3.5 text-left text-xs" data-scenario="breakwater">
-            <div class="font-semibold text-[#2997ff] mb-1 flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-[#2997ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg>
-              <span>Breakwater Barrier</span>
-            </div>
-            <p class="text-[11px] text-[#86868b]">เขื่อนกันคลื่นนอกชายฝั่ง</p>
-          </button>
-        </div>
-      </div>
-
-      <!-- Wave Physics Canvas & Dashboard -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <!-- 2D Physics Viewport -->
-        <div class="lg:col-span-8 apple-card p-6 flex flex-col space-y-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <button id="wave-start-btn" class="apple-btn-primary !text-xs !py-1.5 !px-4">
-                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                <span>Start</span>
-              </button>
-              <button id="wave-pause-btn" class="apple-btn-secondary !text-xs !py-1.5 !px-3.5">
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                <span>Pause</span>
-              </button>
-              <button id="wave-reset-btn" class="apple-btn-secondary !text-xs !py-1.5 !px-3.5">
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                <span>Reset</span>
-              </button>
-            </div>
-
-            <!-- View Select -->
-            <div class="flex items-center space-x-2 text-xs">
-              <span class="text-[#86868b]">Render View:</span>
-              <select id="wave-view-select" class="apple-input !py-1 !px-3 !text-xs">
-                <option value="wave" class="bg-[#161617] text-[#f5f5f7]">Wave Crests (ผิวน้ำ)</option>
-                <option value="energy" class="bg-[#161617] text-[#f5f5f7]">Energy Heatmap (พลังงาน)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-[#0c0c0e]">
-            <canvas id="wave-canvas" width="512" height="512" class="simulation-canvas absolute inset-0 w-full h-full object-cover"></canvas>
-          </div>
-
-          <div class="flex items-center justify-between text-xs text-[#86868b]">
-            <span>แผ่นดิน (เขียว) และชายหาด (ทอง) คงอยู่ตลอดเวลา</span>
-            <span class="text-white">Wave propagates from south to north</span>
-          </div>
-        </div>
-
-        <!-- Physics Stats Column -->
-        <div class="lg:col-span-4 space-y-4">
-          
-          <div class="apple-card p-5">
-            <span class="text-xs text-[#86868b]">Sediment Loss (การสูญเสียตะกอน)</span>
-            <div class="mt-1">
-              <span id="wave-stat-loss" class="text-3xl font-bold font-mono text-[#ff453a]">0.0%</span>
-            </div>
-            <span id="wave-stat-sediment" class="text-xs text-[#86868b] font-mono mt-1 block">มวลตะกอนคงเหลือ: 1,000 หน่วย</span>
-          </div>
-
-          <div class="apple-card p-5">
-            <span class="text-xs text-[#86868b]">Dissipated Wave Energy (พลังงานที่สลายตัว)</span>
-            <div class="mt-1">
-              <span id="wave-stat-dissipation" class="text-3xl font-bold font-mono text-white">0 J/m</span>
-            </div>
-            <span class="text-xs text-[#86868b] mt-1 block">ลดทอนผ่านความขรุขระแฟร็กทัล & แนวป้องกัน</span>
-          </div>
-
-          <!-- Controls -->
-          <div class="apple-card p-4 space-y-3 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="text-[#86868b]">Wave Amplitude:</span>
-              <div class="flex items-center space-x-2">
-                <input type="range" id="wave-amp-slider" min="4" max="25" value="12" class="w-24 h-1 bg-[#333336] rounded cursor-pointer">
-                <span id="wave-amp-val" class="font-mono text-white font-medium w-7">12 m</span>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <span class="text-[#86868b]">Defense Mitigation:</span>
-              <select id="defense-select" class="apple-input !py-1 !px-2.5 !text-xs">
-                <option value="none" class="bg-[#161617] text-[#f5f5f7]">ไม่มี (ธรรมชาติ)</option>
-                <option value="mangrove" class="bg-[#161617] text-[#f5f5f7]">ป่าชายเลน (Mangrove)</option>
-                <option value="breakwater" class="bg-[#161617] text-[#f5f5f7]">เขื่อนกันคลื่น (Breakwater)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="apple-card p-5 text-xs space-y-2">
-            <span class="font-semibold text-white block">Wave Attenuation Principle:</span>
-            <p class="text-[#86868b] leading-relaxed">
-              ชายฝั่งที่มีมิติแฟร็กทัลสูง ($D > 1.25$) จะมีพื้นที่ผิวสัมผัสคลื่นมากกว่า ช่วยกระจายพลังงานคลื่นไม่ให้ปะทะแผ่นดินพร้อมกันในจุดเดียว
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
     </section>
 
-
-    <!-- ================= TAB 3: STEP-BY-STEP CALCULATION GUIDE ================= -->
+    <!-- ================= TAB 2: STEP-BY-STEP CALCULATION GUIDE ================= -->
     <section id="tab-pane-calculation" class="tab-pane hidden space-y-6">
       
       <div class="apple-card p-8">
@@ -1323,15 +1179,15 @@
           <svg class="w-5 h-5 text-[#86868b] group-hover:text-purple-400 transform group-hover:translate-x-1 transition flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
-        <!-- Option 3: 4K Modern Box Grid -->
+        <!-- Option 3: 4K Pure Satellite Imagery -->
         <button id="btn-export-4k-single" class="w-full text-left p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-white/25 flex items-center justify-between group transition">
           <div class="flex items-center space-x-4">
             <div class="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-              <svg class="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              <svg class="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             </div>
             <div>
-              <span class="text-sm font-bold text-white group-hover:text-blue-400 transition">4K Modern Box Grid (เฉพาะกล่องปัจจุบันเดี่ยว)</span>
-              <p class="text-xs text-[#86868b] mt-0.5">3840 × 3840 px • ตารางครอบกล่องแฟร็กทัลขนาดปัจจุบันเดี่ยวความละเอียดสูงสุด</p>
+              <span class="text-sm font-bold text-white group-hover:text-blue-400 transition">4K Pure Satellite Imagery (ภาพถ่ายดาวเทียมล้วน คมชัด 4K)</span>
+              <p class="text-xs text-[#86868b] mt-0.5">3840 × 3840 px (14.7 Megapixels) • ภาพถ่ายดาวเทียมสีจริงความละเอียดสูง 100% ปราศจากตารางและเลเยอร์บดบัง</p>
             </div>
           </div>
           <svg class="w-5 h-5 text-[#86868b] group-hover:text-blue-400 transform group-hover:translate-x-1 transition flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1399,7 +1255,6 @@
   <script src="./js/image-processor.js"></script>
   <script src="./js/box-counting.js"></script>
   <script src="./js/ols-regression.js"></script>
-  <script src="./js/wave-simulation.js"></script>
   <script src="./js/app.js"></script>
 </body>
 </html>
