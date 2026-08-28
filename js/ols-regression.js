@@ -21,15 +21,15 @@ class OLSRegression {
 
     for (let i = 0; i < n; i++) {
       const pt = scaleResults[i];
-      const xi = pt.logInvRatio !== undefined ? pt.logInvRatio : Math.log(1 / pt.boxSize);
-      const yi = pt.logCount;
+      const xi = pt.logInvRatio !== undefined ? pt.logInvRatio : (pt.x !== undefined ? pt.x : Math.log(1 / (pt.boxSize || 1)));
+      const yi = pt.logCount !== undefined ? pt.logCount : (pt.y !== undefined ? pt.y : Math.log(pt.count || 1));
       x.push(xi);
       y.push(yi);
       dataPoints.push({
-        boxSize: pt.boxSize,
+        boxSize: pt.boxSize || 1,
         x: xi,
         y: yi,
-        count: pt.count
+        count: pt.count || Math.exp(yi)
       });
     }
 

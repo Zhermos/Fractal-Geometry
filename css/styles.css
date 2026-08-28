@@ -61,6 +61,20 @@ code, kbd, samp, pre, .font-mono {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.nav-tab-btn {
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+  cursor: pointer;
+}
+
+.nav-tab-btn span {
+  white-space: nowrap !important;
+  display: inline-block !important;
+}
+
 /* Apple Typography Gradients */
 .text-apple-gradient {
   background: linear-gradient(180deg, #ffffff 0%, #86868b 100%);
@@ -235,6 +249,18 @@ option:checked, option:hover {
 }
 
 /* Minimal Risk Badges */
+.badge-risk-low,
+.badge-risk-med,
+.badge-risk-high {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1.2;
+  border-radius: 9999px;
+  box-sizing: border-box;
+}
+
 .badge-risk-low {
   background-color: rgba(48, 209, 88, 0.15);
   color: #30d158;

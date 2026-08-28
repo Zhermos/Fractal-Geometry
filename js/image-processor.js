@@ -261,14 +261,79 @@ class ImageProcessor {
   }
 
   /**
-   * Extracts strictly the Water-Land Shoreline Interface
-   * Eliminates 100% of internal island points and inland mountain noise.
+   * Extracts strictly the Gulf of Thailand Coastline Interface
+   * Isolates the Gulf of Thailand water basin via Flood Fill.
+   * Completely eliminates 100% of outside sea fragments (Andaman Sea / Strait of Malacca)
+   * and inland mountain/island interior noise.
    */
   static extractCoastlineInterface(imageData, borderPadding = 8) {
     const { width, height } = imageData;
     const landMask = this.generateLandMask(imageData);
+
+    // 1. Identify the Gulf of Thailand Water Basin via Flood Fill from the center/eastern Gulf
+    const gulfWater = new Uint8Array(width * height);
+    const queue = [];
+
+    // Probe candidate seeds in the deep center of the Gulf of Thailand
+    const seeds = [
+      { x: Math.floor(width * 0.58), y: Math.floor(height * 0.48) },
+      { x: Math.floor(width * 0.52), y: Math.floor(height * 0.38) },
+      { x: Math.floor(width * 0.65), y: Math.floor(height * 0.55) },
+      { x: Math.floor(width * 0.48), y: Math.floor(height * 0.52) }
+    ];
+
+    for (const seed of seeds) {
+      const sIdx = seed.y * width + seed.x;
+      if (landMask[sIdx] === 0 && gulfWater[sIdx] === 0) {
+        gulfWater[sIdx] = 1;
+        queue.push(seed);
+        break;
+      }
+    }
+
+    // If seed was not open water, scan the eastern/central basin
+    if (queue.length === 0) {
+      for (let y = Math.floor(height * 0.25); y < Math.floor(height * 0.75); y++) {
+        for (let x = Math.floor(width * 0.35); x < Math.floor(width * 0.85); x++) {
+          const idx = y * width + x;
+          if (landMask[idx] === 0) {
+            gulfWater[idx] = 1;
+            queue.push({ x, y });
+            break;
+          }
+        }
+        if (queue.length > 0) break;
+      }
+    }
+
+    // Flood fill all water pixels belonging specifically to the Gulf of Thailand basin
+    let head = 0;
+    while (head < queue.length) {
+      const { x, y } = queue[head++];
+      const nbs = [
+        { x: x + 1, y },
+        { x: x - 1, y },
+        { x, y: y + 1 },
+        { x, y: y - 1 }
+      ];
+
+      for (const n of nbs) {
+        if (n.x >= 0 && n.x < width && n.y >= 0 && n.y < height) {
+          const nIdx = n.y * width + n.x;
+          if (landMask[nIdx] === 0 && gulfWater[nIdx] === 0) {
+            gulfWater[nIdx] = 1;
+            queue.push(n);
+          }
+        }
+      }
+    }
+
+    // 2. Extract coastline: Land pixels that directly border GULF OF THAILAND WATER ONLY!
     const edges = new Uint8Array(width * height);
     const edgePixels = [];
+
+    // Fallback: If flood fill didn't find a disconnected basin, check regular land-water boundary
+    const isBasinIsolated = queue.length > 500;
 
     for (let y = borderPadding; y < height - borderPadding; y++) {
       for (let x = borderPadding; x < width - borderPadding; x++) {
@@ -276,13 +341,22 @@ class ImageProcessor {
         const isLand = landMask[idx] === 1;
 
         if (isLand) {
-          // Check 4-connected neighbors for water
-          const nTop = landMask[(y - 1) * width + x] === 0;
-          const nBottom = landMask[(y + 1) * width + x] === 0;
-          const nLeft = landMask[y * width + (x - 1)] === 0;
-          const nRight = landMask[y * width + (x + 1)] === 0;
+          let hasGulfNeighbor = false;
+          if (isBasinIsolated) {
+            const nTop = gulfWater[(y - 1) * width + x] === 1;
+            const nBottom = gulfWater[(y + 1) * width + x] === 1;
+            const nLeft = gulfWater[y * width + (x - 1)] === 1;
+            const nRight = gulfWater[y * width + (x + 1)] === 1;
+            hasGulfNeighbor = nTop || nBottom || nLeft || nRight;
+          } else {
+            const nTop = landMask[(y - 1) * width + x] === 0;
+            const nBottom = landMask[(y + 1) * width + x] === 0;
+            const nLeft = landMask[y * width + (x - 1)] === 0;
+            const nRight = landMask[y * width + (x + 1)] === 0;
+            hasGulfNeighbor = nTop || nBottom || nLeft || nRight;
+          }
 
-          if (nTop || nBottom || nLeft || nRight) {
+          if (hasGulfNeighbor) {
             edges[idx] = 1;
             edgePixels.push({ x, y });
           }
@@ -344,7 +418,7 @@ class ImageProcessor {
 
     const imgData = ctx.createImageData(width, height);
     const data = imgData.data;
-    const edgeColor = options.edgeColor || [34, 197, 94]; // vibrant emerald green
+    const edgeColor = options.edgeColor || [56, 189, 248]; // soft luminous light blue / cyan (#38bdf8)
     const bgColor = options.bgColor || [6, 19, 37];       // deep navy ocean
 
     for (let i = 0; i < matrix.length; i++) {

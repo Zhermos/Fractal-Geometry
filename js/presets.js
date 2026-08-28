@@ -305,10 +305,6 @@ function renderWholeGulfMap(ctx, width, height, mapStyle) {
   ctx.beginPath();
   ctx.ellipse(width * 0.33, height * 0.89, 14, 28, -0.25, 0, Math.PI * 2);
   ctx.fill();
-
-  if (mapStyle === 'satellite') {
-    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-ALL', '9°N-14°N, 99°E-103°E');
-  }
 }
 
 function renderUpperGulfMap(ctx, width, height, mapStyle) {
@@ -371,10 +367,6 @@ function renderUpperGulfMap(ctx, width, height, mapStyle) {
     {x: width * 0.82, y: height * 0.65},
     {x: width, y: height * 0.75}
   ], 4, 18, 0.45);
-
-  if (mapStyle === 'satellite') {
-    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-UPP', '13.3°N, 100.5°E');
-  }
 }
 
 function renderEasternGulfMap(ctx, width, height, mapStyle) {
@@ -410,12 +402,9 @@ function renderEasternGulfMap(ctx, width, height, mapStyle) {
   addCoastlineRoughness(ctx, pts, 5, 22, 0.55);
 
   drawIsland(ctx, width * 0.32, height * 0.78, 22, 14, 0.6, mapStyle);
+  drawIsland(ctx, width * 0.32, height * 0.78, 22, 14, 0.6, mapStyle);
   drawIsland(ctx, width * 0.38, height * 0.90, 16, 10, 0.5, mapStyle);
   drawIsland(ctx, width * 0.22, height * 0.48, 12, 7, 0.4, mapStyle);
-
-  if (mapStyle === 'satellite') {
-    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-EST', '12.5°N, 101.8°E');
-  }
 }
 
 function renderWesternGulfMap(ctx, width, height, mapStyle) {
@@ -447,10 +436,6 @@ function renderWesternGulfMap(ctx, width, height, mapStyle) {
   ctx.strokeStyle = mapStyle === 'satellite' ? '#eab308' : '#22c55e';
   ctx.lineWidth = 1.5;
   addCoastlineRoughness(ctx, pts, 4, 12, 0.35);
-
-  if (mapStyle === 'satellite') {
-    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-WST', '11.8°N, 99.8°E');
-  }
 }
 
 function renderSouthernGulfMap(ctx, width, height, mapStyle) {
@@ -490,10 +475,6 @@ function renderSouthernGulfMap(ctx, width, height, mapStyle) {
   ctx.beginPath();
   ctx.ellipse(width * 0.22, height * 0.72, 28, 55, 0.2, 0, Math.PI * 2);
   ctx.fill();
-
-  if (mapStyle === 'satellite') {
-    drawSatelliteTelemetryBadge(ctx, width, height, 'TH-STH', '8.2°N, 100.3°E');
-  }
 }
 
 // Helpers
@@ -579,41 +560,5 @@ function drawIsland(ctx, cx, cy, rx, ry, roughness, mapStyle = 'satellite') {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  ctx.restore();
-}
-
-function drawSatelliteTelemetryBadge(ctx, width, height, regionCode, coordsText) {
-  ctx.save();
-  const boxW = 210;
-  const boxH = 42;
-  const bx = width - boxW - 10;
-  const by = height - boxH - 10;
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  if (typeof ctx.roundRect === 'function') {
-    ctx.roundRect(bx, by, boxW, boxH, 8);
-  } else {
-    ctx.rect(bx, by, boxW, boxH);
-  }
-  ctx.fill();
-  ctx.stroke();
-
-  // Active satellite status dot
-  ctx.fillStyle = '#30d158';
-  ctx.beginPath();
-  ctx.arc(bx + 12, by + 14, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 9.5px "JetBrains Mono", monospace';
-  ctx.fillText(`SENTINEL-2 MSI [${regionCode}]`, bx + 22, by + 17);
-
-  ctx.fillStyle = '#86868b';
-  ctx.font = '8.5px "JetBrains Mono", monospace';
-  ctx.fillText(`10m GSD | ${coordsText}`, bx + 12, by + 32);
-
   ctx.restore();
 }

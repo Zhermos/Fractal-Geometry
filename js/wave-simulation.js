@@ -157,13 +157,19 @@ class WaveErosionSimulation {
     const gh = this.gridH;
     const c2 = this.waveSpeed * this.waveSpeed;
 
-    // 1. Oscillating wave swell from open ocean at bottom
+    // 1. Multi-Harmonic Oceanic Wave Swell Generation (Southern & Southeastern Open Waters)
     const waveSourceY = gh - 2;
     for (let gx = 0; gx < gw; gx++) {
       if (this.landMask[waveSourceY * gw + gx] === 0) {
-        const wave = Math.sin(this.timeStep * this.waveFrequency) * this.waveAmplitude
-                   + Math.sin(this.timeStep * this.waveFrequency * 0.5 + gx * 0.08) * (this.waveAmplitude * 0.35);
+        const primaryWave = Math.sin(this.timeStep * this.waveFrequency) * this.waveAmplitude;
+        const harmonicWave = Math.sin(this.timeStep * this.waveFrequency * 0.65 + gx * 0.08) * (this.waveAmplitude * 0.45);
+        const crossSwell = Math.cos(this.timeStep * this.waveFrequency * 0.35 - gx * 0.05) * (this.waveAmplitude * 0.30);
+        const wave = primaryWave + harmonicWave + crossSwell;
+        
         this.u[waveSourceY * gw + gx] = wave;
+        if (waveSourceY + 1 < gh) {
+          this.u[(waveSourceY + 1) * gw + gx] = wave * 0.92;
+        }
       }
     }
 
@@ -196,14 +202,14 @@ class WaveErosionSimulation {
           4 * this.u[idx];
 
         let nextVal = (2 * this.u[idx] - this.uPrev[idx] + c2 * laplacian) * effectiveDamping;
-        if (nextVal > 40) nextVal = 40;
-        if (nextVal < -40) nextVal = -40;
+        if (nextVal > 45) nextVal = 45;
+        if (nextVal < -45) nextVal = -45;
 
         this.uNext[idx] = nextVal;
 
-        // Wave Energy
+        // Wave Energy Accumulation
         const energy = nextVal * nextVal;
-        this.energyMap[idx] = this.energyMap[idx] * 0.97 + energy * 0.03;
+        this.energyMap[idx] = this.energyMap[idx] * 0.96 + energy * 0.04;
 
         if (this.hasLandWithin(x, y, 1)) {
           dissipatedInStep += energy * (0.05 * (this.fractalD - 0.9));
@@ -310,29 +316,54 @@ class WaveErosionSimulation {
         } else {
           // Ocean Water Rendering
           if (viewMode === 'energy') {
-            // Energy Heatmap in Ocean
-            const energyVal = Math.min(this.energyMap[gIdx] / 60, 1.0);
-            const r = Math.floor(Math.min(255, energyVal * 350));
-            const g = Math.floor(Math.sin(energyVal * Math.PI) * 220);
-            const b = Math.floor((1 - energyVal) * 240);
+            // High-Definition Thermal Energy Heatmap (Deep Navy -> Cyan -> Green -> Gold -> Red)
+            const e = Math.min(this.energyMap[gIdx] / 75, 1.0);
+            let r, g, b;
+
+            if (e < 0.25) {
+              // Deep Ocean Navy to Electric Cyan
+              const t = e / 0.25;
+              r = Math.floor(10 + t * (14 - 10));
+              g = Math.floor(20 + t * (165 - 20));
+              b = Math.floor(55 + t * (233 - 55));
+            } else if (e < 0.50) {
+              // Cyan to Emerald Green
+              const t = (e - 0.25) / 0.25;
+              r = Math.floor(14 + t * (48 - 14));
+              g = Math.floor(165 + t * (209 - 165));
+              b = Math.floor(233 + t * (88 - 233));
+            } else if (e < 0.75) {
+              // Emerald Green to Radiant Gold/Amber
+              const t = (e - 0.50) / 0.25;
+              r = Math.floor(48 + t * (250 - 48));
+              g = Math.floor(209 + t * (204 - 209));
+              b = Math.floor(88 + t * (21 - 88));
+            } else {
+              // Radiant Gold to Intense Crimson Impact
+              const t = (e - 0.75) / 0.25;
+              r = Math.floor(250 + t * (255 - 250));
+              g = Math.floor(204 + t * (45 - 204));
+              b = Math.floor(21 + t * (30 - 21));
+            }
+
             pixels[pIdx] = r;
             pixels[pIdx + 1] = g;
             pixels[pIdx + 2] = b;
             pixels[pIdx + 3] = 255;
           } else {
-            // Dynamic Wave Surface (Dark Navy -> Glowing Cyan Crests)
+            // Dynamic Wave Surface (Deep Navy Ocean -> Glowing Cyan Wave Crests)
             const hVal = this.u[gIdx];
             const normH = Math.max(-1, Math.min(1, hVal / this.waveAmplitude));
 
             let r, g, b;
             if (normH >= 0) {
-              r = Math.floor(6 + normH * 170);
-              g = Math.floor(30 + normH * 220);
-              b = Math.floor(70 + normH * 185);
+              r = Math.floor(8 + normH * 190);
+              g = Math.floor(28 + normH * 227);
+              b = Math.floor(65 + normH * 190);
             } else {
-              r = Math.floor(Math.max(4, 6 + normH * 5));
-              g = Math.floor(Math.max(12, 30 + normH * 20));
-              b = Math.floor(Math.max(35, 70 + normH * 45));
+              r = Math.floor(Math.max(4, 8 + normH * 6));
+              g = Math.floor(Math.max(10, 28 + normH * 20));
+              b = Math.floor(Math.max(30, 65 + normH * 45));
             }
 
             pixels[pIdx] = r;
@@ -385,10 +416,12 @@ class WaveErosionSimulation {
 
     const loop = () => {
       if (!this.isRunning) return;
+      // Run 2 physics sub-steps per animation frame for rich, energetic hydrodynamic propagation
+      this.step();
       this.step();
       this.render(viewMode);
 
-      if (onUpdate && this.timeStep % 3 === 0) {
+      if (onUpdate && this.timeStep % 2 === 0) {
         onUpdate({
           totalSediment: this.totalSediment,
           sedimentLossPercent: ((this.initialSediment - this.totalSediment) / this.initialSediment) * 100,
